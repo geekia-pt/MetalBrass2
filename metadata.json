@@ -1,0 +1,8 @@
+{
+  "name": "Metalbras OS",
+  "description": "Industrial OS for metalworking enterprises with high-density admin tools and mobile-first worker interfaces.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
