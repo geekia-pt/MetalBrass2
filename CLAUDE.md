@@ -2,32 +2,29 @@
 
 ## Autonomy & Permissions (ALLOW MODE)
 
-### DO WITHOUT ASKING - Execute autonomously:
+### DO WITHOUT ASKING:
 - Run any bash/shell command (npm, git, node, tsc, vite, curl, etc.)
-- Read, write, edit, create any file or directory in the project
+- Read, write, edit, create any file or directory
 - Install/update/remove npm packages
 - Run dev server, build, preview, tests
 - Git add, commit (conventional commits)
 - Run TypeScript compiler, linters, formatters
 - Create/modify components, views, types, configs
-- Refactor code, rename files, restructure directories
-- Run multiple commands in sequence without confirmation
-- Access any folder on this machine related to the project
+- Refactor, rename, restructure
 - Execute browser automation for testing
 
-### ASK BEFORE DOING:
-- `git push` to remote repository
-- Deleting files or directories permanently
-- Destructive git operations (reset --hard, force push, branch -D)
+### ASK BEFORE:
+- `git push` to remote
+- Deleting files permanently
+- Destructive git ops (reset --hard, force push, branch -D)
 - Modifying .env credentials or API keys
-- Any action affecting production environment
+- Actions affecting production
 
-### NEVER DO:
-- Push to remote without permission
+### NEVER:
+- Push without permission
 - Force push to main
 - Delete code without instruction
 - Overwrite credentials
-- Run `rm -rf` on project directories
 
 ---
 
@@ -35,33 +32,39 @@
 
 **Name**: MetalBrass OS (metalbras-os)
 **Type**: Industrial Operating System for metalworking enterprises
-**Domain**: Industrial/metalworking sector - construction, welding, heavy equipment
-**Operations**: Multinational across Europe (Portugal, France, Spain, Belgium)
-**Version**: 0.0.0 (development)
-
-### What it does:
-- Personnel management & compliance tracking for industrial workers
-- Project portfolio management with budgets, margins & milestones
-- Document OCR verification (passports, certifications, A1 forms)
-- Timesheet approval with GPS location verification
-- Mobile worker app (punch clock, document status, payment tracking)
-- Multi-tenant company switching (Metalbras, 3DLog, Inovacar, Aço Forte)
+**Domain**: Industrial/metalworking - construction, welding, heavy equipment
+**Scale**: 700+ workers, 60+ projects, 4+ companies
+**Operations**: Multinational (Portugal, France, Spain, Belgium)
+**Repo**: github.com/geekia-pt/MetalBrass2
+**Version**: 1.0.0-frontend (all UI complete, awaiting backend)
 
 ---
 
 ## Tech Stack
 
-| Layer       | Technology                    |
-|-------------|-------------------------------|
-| Framework   | React 19.2.4                  |
-| Language    | TypeScript 5.8               |
-| Bundler     | Vite 6.2.0                   |
-| Routing     | React Router DOM 7.13.0      |
-| Icons       | Lucide React 0.563.0         |
-| Charts      | Recharts 3.7.0               |
-| Styling     | Tailwind CSS (custom theme)  |
-| OCR         | Gemini API (Google AI)        |
-| Build Target| ES2022                        |
+### Frontend (COMPLETE)
+| Layer       | Technology              |
+|-------------|-------------------------|
+| Framework   | React 19.2.4            |
+| Language    | TypeScript 5.8          |
+| Bundler     | Vite 6.2.0              |
+| Routing     | React Router DOM 7.13.0 |
+| Icons       | Lucide React 0.563.0    |
+| Charts      | Recharts 3.7.0          |
+| Styling     | Tailwind CSS (CDN)      |
+| Build       | ES2022                  |
+
+### Backend (TO BUILD)
+| Layer        | Technology                    |
+|--------------|-------------------------------|
+| Runtime      | Node.js or Python (FastAPI)   |
+| Database     | PostgreSQL (VPS)              |
+| Auth         | JWT tokens                    |
+| AI/LLM       | Ollama + Qwen 2.5 (VPS)     |
+| Orchestrator | Kimi Claw                     |
+| WhatsApp     | OpenClaw (VPS)                |
+| File Storage | Local VPS or MinIO            |
+| Deploy       | OpenCloud agent               |
 
 ---
 
@@ -69,179 +72,168 @@
 
 ```
 /Users/macbook_pro/Documents/Metalbrass/
-├── CLAUDE.md                    ← This file
-├── App.tsx                      ← Main routing & company switcher (HashRouter)
-├── index.tsx                    ← React root render
-├── index.html                   ← HTML entry point
-├── types.ts                     ← TypeScript interfaces & enums
-├── vite.config.ts               ← Vite config (port 3000, Gemini API key)
-├── package.json                 ← Dependencies & scripts
-├── tsconfig.json                ← TypeScript config
-├── metadata.json                ← App metadata & permissions
-├── README.md                    ← Project readme
+├── CLAUDE.md
+├── App.tsx                          ← Main routing (HashRouter, 15 routes)
+├── index.tsx                        ← React root
+├── index.html                       ← Entry point + Tailwind CDN
+├── types.ts                         ← TypeScript interfaces & enums
+├── vite.config.ts                   ← Vite config
+├── package.json
+├── tsconfig.json
+├── metadata.json
 │
-├── components/                  ← Reusable UI components
-│   ├── Badge.tsx               ← Compliance status badge (VALID/EXPIRING/PENDING/CRITICAL)
-│   ├── KpiCard.tsx             ← KPI metric card with trend indicator
-│   └── Sidebar.tsx             ← Main navigation sidebar + company switcher
+├── components/
+│   ├── Badge.tsx                   ← Compliance status badge
+│   ├── KpiCard.tsx                 ← KPI metric card
+│   └── Sidebar.tsx                 ← Navigation (14 links + company switcher)
 │
-└── views/                       ← Route views
-    ├── DashboardView.tsx        ← / - Executive overview, KPIs, charts, alerts
-    ├── PersonnelView.tsx        ← /personnel - Worker roster & compliance tracking
-    ├── ProjectsView.tsx         ← /projects - Project portfolio listing
-    ├── ProjectDetailView.tsx    ← /projects/:id - Project cockpit, team, logistics
-    ├── DocumentOcrView.tsx      ← /documents - OCR validation & document verification
-    ├── TimesheetView.tsx        ← /timesheet - Time entry approval & GPS verification
-    └── WorkerAppView.tsx        ← Worker mode - Mobile-first punch clock & docs
+├── views/
+│   ├── DashboardView.tsx           ← / (6 KPIs, projects, chart, alerts, shortcuts)
+│   ├── CandidatesView.tsx          ← /candidates (bot pipeline, 10 doc types)
+│   ├── PersonnelView.tsx           ← /personnel (CRUD, actions, worker URL)
+│   ├── ProjectsView.tsx            ← /projects (table + create modal)
+│   ├── ProjectDetailView.tsx       ← /projects/:id (cockpit, team, logistics)
+│   ├── DocumentOcrView.tsx         ← /documents (list, OCR status, preview)
+│   ├── TimesheetView.tsx           ← /timesheet (hours, GPS, overtime)
+│   ├── AllocationsView.tsx         ← /allocations (dual view, skill matching)
+│   ├── HousingsView.tsx            ← /housings (cards, detail, utilities)
+│   ├── IndustryView.tsx            ← /industry (kanban 6 cols, team)
+│   ├── FleetView.tsx               ← /fleet (vehicles, maintenance)
+│   ├── DatabaseView.tsx            ← /database (4 tabs, import/export)
+│   ├── ExportsView.tsx             ← /exports (3-step wizard)
+│   ├── SettingsView.tsx            ← /settings (5 sub-pages)
+│   └── WorkerAppView.tsx           ← Worker mode (login + punch clock)
+│
+├── services/
+│   └── api.ts                      ← HTTP client ready for backend
+│
+└── docs/plans/
+    ├── 2026-03-17-metalbras-os-prd-design.md
+    ├── 2026-03-17-implementation-plan.md
+    └── 2026-03-17-BIG-PRD-metalbras-os.md  ← Complete system PRD
 ```
 
 ---
 
-## Routing
+## Routing (15 routes)
 
 ```
 HashRouter
-├── /                → DashboardView
-├── /personnel       → PersonnelView
-├── /projects        → ProjectsView
-├── /projects/:id    → ProjectDetailView
-├── /documents       → DocumentOcrView
-├── /timesheet       → TimesheetView
-├── /settings        → (not implemented)
-└── /*               → DashboardView (fallback)
+├── /                → Dashboard (KPIs, projects, shortcuts)
+├── /candidates      → Candidates pipeline (bot → validation)
+├── /personnel       → Active personnel (CRUD + actions)
+├── /projects        → Projects list + create
+├── /projects/:id    → Project detail (cockpit/team/logistics)
+├── /documents       → Documents (OCR, status, preview)
+├── /timesheet       → Timesheet (hours, GPS, approve)
+├── /allocations     → Allocations (by project / by worker)
+├── /housings        → Housings (cards, detail, utilities)
+├── /industry        → Industry kanban (production orders)
+├── /fleet           → Fleet (vehicles, maintenance)
+├── /database        → Database (4 tabs, import/export)
+├── /exports         → Exports wizard (Primavera, ONSS, SS)
+├── /settings        → Settings (5 sub-pages)
+└── /*               → Dashboard (fallback)
 
-Worker Mode: Toggle via Sidebar (replaces entire UI)
+Worker App: nexus.metalbrass.com/name-surname + password
 ```
 
 ---
 
-## Key Features
+## 14 Modules (All UI Complete)
 
-### Admin Dashboard
-- Multi-tenant company switching (4 companies)
-- KPI tracking: utilization, costs, compliance, allocations
-- Production volume charts (Recharts)
-- Compliance alerts system
-- Personnel roster with NIF search & filtering (20 workers)
-- Project portfolio with budgets & margins (4 projects)
-- Project cockpit with milestones & geo-fencing
-- Document OCR verification (Gemini API) with confidence scores
-- Timesheet approval with GPS location verification
-- Bulk approval workflows
-- Export to Primavera
+### 1. Dashboard
+6 KPIs (utilization, workers, revenue, compliance, projects, payroll with day/week/month toggle), active project cards with responsible name, production chart, compliance alerts, 12 quick-link shortcuts, export modal, allocation modal
 
-### Worker Mobile App
-- Punch clock in/out with animation
-- Real-time GPS location tracking
-- Document status & expiry alerts
-- Photo upload for certification renewal
-- Hour tracking & payment visibility
+### 2. Candidatos (Bot Pipeline)
+Pipeline: Bot Ativo → Dados Recebidos → Em Validação → Validado
+10 document types: Passaporte, CC, A1, Seguro Saúde, Aptidão Saúde, Segurança Trabalho, Trabalho em Altura, Certidão Criminal, IBAN, Foto
+Certifications + Work history. Actions: Approve/Reject/Request docs via WhatsApp
+
+### 3. Pessoal
+CRUD workers, annual revenue, worker URL (copy to clipboard), actions dropdown with blur modals: Send Message (WhatsApp/Email + templates), Update Docs (upload + WhatsApp request), Full Profile (data/skills/history), Deactivate (mandatory reason)
+
+### 4. Projetos
+Table + create modal (GPS coords, geo-fence, Primavera code, skills, dates). Detail page: cockpit KPIs, milestones, map, team management, logistics
+
+### 5. Documentos
+Chronological list, 5 status types (approved/pending/expired/processing/manual_review), filter tabs with counts, OCR in background, approve only on low confidence, document preview modal with zoom/rotate
+
+### 6. Timesheet
+Expanded: clock-in/out, overtime, cost per entry, 4 summary cards, GPS verification, Primavera export, bulk approve
+
+### 7. Alocações
+Dual view (Por Obra / Por Funcionário), skill matching %, ranked candidates, allocation modal with housing + vehicle suggestion, pipeline counters
+
+### 8. Alojamentos
+Card grid + "Novo Alojamento", detail page: occupants, capacity bar, utilities (water/electricity/gas/phone/internet), inventory, maintenance log
+
+### 9. Indústria
+Kanban 6 columns (Recebida→Preparação→Produção→Qualidade→Envio→Enviado), team sidebar with availability, order detail (tasks checklist, materials, photos), priority badges
+
+### 10. Frota
+Vehicle table (plate, model, km, driver, project, maintenance), detail page (documents/insurance/inspection, maintenance history with costs), create modal
+
+### 11. Base de Dados
+4 tabs (Obras, Funcionários, Frota, Localizações), import CSV/Excel, export, search per tab
+
+### 12. Exportações
+3-step wizard: select data (checkboxes) → select destination (Primavera/Excel/ONSS/SS/Finanças) → period + confirm. Export history table
+
+### 13. Configurações
+Side navigation: Utilizadores (CRUD + roles), Compliance (rules per country), Alojamento (rules), Templates (CRUD), Integrações (Primavera/WhatsApp/Kimi/Ollama status)
+
+### 14. Modo Operário
+Login: nexus.metalbrass.com/name + password. Punch clock, documents with status icons, weekly hours, profile page, notification badges, real-time clock
 
 ---
 
-## Design System
+## Business Flow
 
-- **Theme**: Industrial dark (custom Tailwind colors)
-- **Colors**: `industrial`, `industrial-dark`, `industrial-steel`
-- **Status**: `compliance-green`, `compliance-red`, `compliance-amber`
-- **Font**: Inter
-- **Corners**: pills (2xl), cards (lg), buttons (md)
-
----
-
-## State Management
-- React hooks (useState, useEffect) - local component state
-- No global state library
-- Mock data hardcoded in each view (no backend)
-- React Router for navigation
-
----
-
-## Scripts
-
-```bash
-npm run dev      # Start dev server (port 3000)
-npm run build    # Production build
-npm run preview  # Preview production build
+```
+CAPTAÇÃO (Bot WhatsApp)
+  → CANDIDATOS (dados + docs via bot)
+    → VALIDAÇÃO (equipa interna aprova)
+      → DISPONÍVEL (base de dados)
+        → ALOCAÇÃO (matching AI: skills + obra + alojamento + viatura)
+          → INTEGRAÇÃO (training, contrato, hospedagem)
+            → PESSOAL (em obra, timesheet diário)
+              → ACOMPANHAMENTO (compliance, horas, faturamento)
+                → EXPORT (Primavera, ONSS, SS, Finanças)
 ```
 
 ---
 
-## Dev Server
-- **URL**: http://localhost:3001 (or 3000 if available)
-- **Hot reload**: Vite HMR enabled
+## Architecture
+
+```
+Frontend (React)  ←→  API Backend (VPS)
+                          ↕
+                     PostgreSQL (VPS)
+                          ↕
+                     Kimi Claw (orchestrator)
+                     ├── Qwen 2.5 via Ollama (OCR, matching, chatbot)
+                     ├── WhatsApp via OpenClaw (document capture)
+                     └── Automations (compliance, declarations)
+```
+
+---
+
+## Next Phase: Backend Development
+
+See: docs/plans/2026-03-17-BIG-PRD-metalbras-os.md
 
 ---
 
 ## Conventions
-- **Commits**: Conventional commits (feat:, fix:, refactor:, chore:, etc.)
-- **Components**: PascalCase, .tsx files
-- **Views**: [Name]View.tsx pattern
-- **Types**: Centralized in types.ts
-- **Language**: Portuguese (UI labels), English (code)
-
----
-
----
-
-## Current State Audit (2026-03-17)
-
-### What's Working
-- All 7 views render correctly in browser
-- Sidebar navigation between all routes
-- Company switcher (UI only, no data isolation)
-- KPI cards with mock data
-- Recharts bar chart on dashboard
-- Compliance alerts display
-- Personnel table with search/filter by NIF/name
-- Projects table with status badges & progress bars
-- Project detail with tabs (cockpit/team)
-- Document OCR viewer with zoom/rotate controls
-- Timesheet table with GPS verification display
-- Worker mobile app with punch clock animation
-- Worker docs & money views
-
-### What's NOT Functional (Mock/Placeholder Only)
-- **All data is hardcoded** - zero backend/API calls
-- **No authentication** - `isLoggedIn` hardcoded to `true`
-- **Company switching** - UI changes but data doesn't
-- **All buttons are decorative** - no CRUD operations work
-- **Filters** - buttons exist but don't filter
-- **OCR** - Gemini API key configured but no upload/processing
-- **GPS** - fake location, no real geolocation API
-- **Export to Primavera** - button only
-- **Settings page** - route exists, no view
-- **Logistics tab** - in ProjectDetail, not implemented
-- **Timesheet actions** - approve/reject buttons hidden (opacity-0 without group hover)
-- **Worker clock** - no real time tracking, just toggles state
-- **No database** - no Supabase, no backend whatsoever
-- **No notifications** - toast container exists but unused
-
-### Bugs Found
-1. Timesheet action buttons use `opacity-0 group-hover:opacity-100` but `<tr>` doesn't have `group` class
-2. Worker app clock shows static time `08:14:42` (no live clock)
-3. ProjectDetailView always shows "Renovação Central Hidrelétrica" regardless of route param `:id`
-
----
-
-## Next Phase: Backend Integration
-
-### Target Architecture
-- **Backend**: Supabase (PostgreSQL + Auth + Storage + Realtime)
-- **Deploy**: VPS via OpenCloud agent
-- **Repo**: github.com/geekia-pt/MetalBrass2
-
-### Priority Order
-1. Supabase setup (auth, database schema, RLS policies)
-2. Replace mock data with real API calls
-3. CRUD operations for all modules
-4. Authentication flow
-5. Multi-tenant data isolation
-6. File upload for OCR documents
-7. GPS integration for worker app
-8. Real-time notifications
+- **Commits**: Conventional (feat:, fix:, refactor:, chore:)
+- **Components**: PascalCase .tsx
+- **Views**: [Name]View.tsx
+- **Types**: types.ts
+- **UI Language**: Portuguese
+- **Code Language**: English
 
 ---
 
 **Last updated**: 2026-03-17
-**Status**: Frontend complete (UI only), awaiting backend integration
+**Status**: Frontend 100% complete (14 modules, 15 routes, all mock data). Ready for backend development.
