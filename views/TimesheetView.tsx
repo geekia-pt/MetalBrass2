@@ -64,7 +64,7 @@ const TimesheetView: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {MOCK_ENTRIES.map(entry => (
-                <tr key={entry.id} className="hover:bg-slate-50/50">
+                <tr key={entry.id} className="group hover:bg-slate-50/50">
                   <td className="px-6 py-4">
                     <p className="text-sm font-bold text-slate-900">{entry.workerName}</p>
                     <p className="text-[10px] text-slate-400 font-medium">Obra: Lyon South</p>

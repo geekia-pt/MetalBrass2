@@ -9,16 +9,50 @@ import KpiCard from '../components/KpiCard';
 import { ComplianceStatus } from '../types';
 import Badge from '../components/Badge';
 
+const PROJECTS_DATA: Record<string, { name: string; client: string; location: string; country: string; status: string; statusColor: string; margin: string; budget: string; hours: string; compliance: string; teamMembers: { name: string; role: string; status: ComplianceStatus }[] }> = {
+  'p1': {
+    name: 'Renovação Central Hidrelétrica', client: 'EDF France', location: 'Lyon, França', country: 'FR',
+    status: 'Ativo', statusColor: 'bg-green-100 text-green-700 border-green-200',
+    margin: '18.2%', budget: '€ 452k', hours: '1,240h', compliance: '94%',
+    teamMembers: [
+      { name: 'Ricardo Santos', role: 'Soldador TIG', status: ComplianceStatus.VALID },
+      { name: 'Ana Oliveira', role: 'Eng. Mecânica', status: ComplianceStatus.VALID },
+      { name: 'Carlos Mendes', role: 'Ajudante', status: ComplianceStatus.EXPIRING },
+      { name: 'Juliana Lima', role: 'Ponte Rolante', status: ComplianceStatus.PENDING },
+    ]
+  },
+  'p2': {
+    name: 'Estruturas Metálicas Porto', client: 'GaliPort', location: 'Porto, Portugal', country: 'PT',
+    status: 'Ativo', statusColor: 'bg-green-100 text-green-700 border-green-200',
+    margin: '22.5%', budget: '€ 320k', hours: '890h', compliance: '97%',
+    teamMembers: [
+      { name: 'Marcos Silva', role: 'Serralheiro', status: ComplianceStatus.VALID },
+      { name: 'Pedro Alves', role: 'Soldador MIG', status: ComplianceStatus.VALID },
+    ]
+  },
+  'p3': {
+    name: 'Manutenção Eólica Norte', client: 'IberWind', location: 'Bilbao, Espanha', country: 'ES',
+    status: 'Planeamento', statusColor: 'bg-slate-100 text-slate-600 border-slate-200',
+    margin: '15.0%', budget: '€ 0', hours: '0h', compliance: '—',
+    teamMembers: []
+  },
+  'p4': {
+    name: 'Oleoduto Trans-Alpino', client: 'Shell Intl', location: 'Bruxelas, Bélgica', country: 'BE',
+    status: 'Pausado', statusColor: 'bg-amber-100 text-amber-700 border-amber-200',
+    margin: '12.8%', budget: '€ 280k', hours: '520h', compliance: '86%',
+    teamMembers: [
+      { name: 'Ricardo Santos', role: 'Soldador TIG', status: ComplianceStatus.VALID },
+      { name: 'Carlos Mendes', role: 'Ajudante', status: ComplianceStatus.CRITICAL },
+    ]
+  },
+};
+
 const ProjectDetailView: React.FC = () => {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState<'cockpit' | 'team' | 'logistics'>('cockpit');
 
-  const teamMembers = [
-    { name: 'Ricardo Santos', role: 'Soldador TIG', status: ComplianceStatus.VALID },
-    { name: 'Ana Oliveira', role: 'Eng. Mecânica', status: ComplianceStatus.VALID },
-    { name: 'Carlos Mendes', role: 'Ajudante', status: ComplianceStatus.EXPIRING },
-    { name: 'Juliana Lima', role: 'Ponte Rolante', status: ComplianceStatus.PENDING },
-  ];
+  const project = PROJECTS_DATA[id || 'p1'] || PROJECTS_DATA['p1'];
+  const teamMembers = project.teamMembers;
 
   return (
     <div className="space-y-6">
@@ -28,11 +62,11 @@ const ProjectDetailView: React.FC = () => {
         </Link>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900">Renovação Central Hidrelétrica</h1>
-            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded border border-green-200 uppercase tracking-tighter">Ativo</span>
+            <h1 className="text-2xl font-bold text-slate-900">{project.name}</h1>
+            <span className={`px-2 py-0.5 text-[10px] font-bold rounded border uppercase tracking-tighter ${project.statusColor}`}>{project.status}</span>
           </div>
           <p className="text-sm text-slate-500 uppercase font-bold tracking-widest flex items-center gap-2">
-            <MapPin size={12} /> Lyon, França • <span className="text-industrial">EDF France</span>
+            <MapPin size={12} /> {project.location} • <span className="text-industrial">{project.client}</span>
           </p>
         </div>
         <div className="ml-auto flex gap-2">
@@ -65,10 +99,10 @@ const ProjectDetailView: React.FC = () => {
       {activeTab === 'cockpit' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <KpiCard title="Margem Atual" value="18.2%" trend={1.2} label="vs meta" />
-            <KpiCard title="Budget Gasto" value="€ 452k" trend={5.4} label="da verba total" />
-            <KpiCard title="Horas Alocadas" value="1,240h" trend={-2} label="esta semana" />
-            <KpiCard title="Compliance Equipe" value="94%" trend={8} label="docs válidos" />
+            <KpiCard title="Margem Atual" value={project.margin} trend={1.2} label="vs meta" />
+            <KpiCard title="Budget Gasto" value={project.budget} trend={5.4} label="da verba total" />
+            <KpiCard title="Horas Alocadas" value={project.hours} trend={-2} label="esta semana" />
+            <KpiCard title="Compliance Equipe" value={project.compliance} trend={8} label="docs válidos" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

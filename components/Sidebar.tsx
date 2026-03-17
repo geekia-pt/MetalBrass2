@@ -1,16 +1,19 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  FolderOpen, 
-  HardHat, 
-  Clock, 
-  Settings, 
-  ChevronDown, 
+import {
+  LayoutDashboard,
+  Users,
+  FolderOpen,
+  HardHat,
+  Clock,
+  Settings,
+  ChevronDown,
   Check,
-  Smartphone
+  Smartphone,
+  GitPullRequestArrow,
+  Home,
+  Download
 } from 'lucide-react';
 import { Company } from '../types';
 
@@ -98,9 +101,12 @@ const Sidebar: React.FC<SidebarProps> = ({ companies, activeCompany, onCompanyCh
         <NavLink to="/projects" icon={HardHat}>Projetos</NavLink>
         <NavLink to="/documents" icon={FolderOpen}>Documentos</NavLink>
         <NavLink to="/timesheet" icon={Clock}>Timesheet</NavLink>
-        
+        <NavLink to="/allocations" icon={GitPullRequestArrow}>Alocações</NavLink>
+        <NavLink to="/housings" icon={Home}>Alojamentos</NavLink>
+
         <div className="mt-8">
           <p className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sistema</p>
+          <NavLink to="/exports" icon={Download}>Exportações</NavLink>
           <NavLink to="/settings" icon={Settings}>Configurações</NavLink>
         </div>
       </nav>

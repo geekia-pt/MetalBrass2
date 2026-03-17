@@ -7,11 +7,17 @@ const WorkerAppView: React.FC<{ onExit: () => void }> = ({ onExit }) => {
   const [loading, setLoading] = useState(false);
   const [activeView, setActiveView] = useState<'home' | 'docs' | 'money'>('home');
   const [locationName, setLocationName] = useState('Buscando localização...');
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     setTimeout(() => {
       setLocationName('Metalbras - Estaleiro Central (Norte)');
     }, 1500);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const handlePunch = () => {
@@ -185,7 +191,7 @@ const WorkerAppView: React.FC<{ onExit: () => void }> = ({ onExit }) => {
         </div>
         <div className="flex items-center gap-1">
           <Clock size={12} className="text-slate-400" />
-          <span className="text-sm font-bold text-slate-900 tabular-nums">08:14:42</span>
+          <span className="text-sm font-bold text-slate-900 tabular-nums">{currentTime.toLocaleTimeString('pt-PT')}</span>
         </div>
       </footer>
     </div>

@@ -9,6 +9,10 @@ import ProjectDetailView from './views/ProjectDetailView';
 import DocumentOcrView from './views/DocumentOcrView';
 import TimesheetView from './views/TimesheetView';
 import WorkerAppView from './views/WorkerAppView';
+import SettingsView from './views/SettingsView';
+import AllocationsView from './views/AllocationsView';
+import HousingsView from './views/HousingsView';
+import ExportsView from './views/ExportsView';
 import { Company } from './types';
 
 const COMPANIES: Company[] = [
@@ -54,6 +58,10 @@ const App: React.FC = () => {
               <Route path="/projects/:id" element={<ProjectDetailView />} />
               <Route path="/documents" element={<DocumentOcrView />} />
               <Route path="/timesheet" element={<TimesheetView />} />
+              <Route path="/allocations" element={<AllocationsView />} />
+              <Route path="/housings" element={<HousingsView />} />
+              <Route path="/exports" element={<ExportsView />} />
+              <Route path="/settings" element={<SettingsView />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
