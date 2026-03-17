@@ -16,6 +16,7 @@ import ExportsView from './views/ExportsView';
 import IndustryView from './views/IndustryView';
 import FleetView from './views/FleetView';
 import DatabaseView from './views/DatabaseView';
+import CandidatesView from './views/CandidatesView';
 import { Company } from './types';
 
 const COMPANIES: Company[] = [
@@ -56,6 +57,7 @@ const App: React.FC = () => {
           <div className="flex-1 overflow-auto p-6 md:p-8 no-scrollbar">
             <Routes>
               <Route path="/" element={<DashboardView company={currentCompany} />} />
+              <Route path="/candidates" element={<CandidatesView />} />
               <Route path="/personnel" element={<PersonnelView />} />
               <Route path="/projects" element={<ProjectsView />} />
               <Route path="/projects/:id" element={<ProjectDetailView />} />

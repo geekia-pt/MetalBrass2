@@ -16,7 +16,8 @@ import {
   Download,
   Factory,
   Truck,
-  Database
+  Database,
+  UserPlus
 } from 'lucide-react';
 import { Company } from '../types';
 
@@ -100,6 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ companies, activeCompany, onCompanyCh
       <nav className="flex-1 p-4 space-y-1">
         <p className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Geral</p>
         <NavLink to="/" icon={LayoutDashboard}>Dashboard</NavLink>
+        <NavLink to="/candidates" icon={UserPlus}>Candidatos</NavLink>
         <NavLink to="/personnel" icon={Users}>Pessoal</NavLink>
         <NavLink to="/projects" icon={HardHat}>Projetos</NavLink>
         <NavLink to="/documents" icon={FolderOpen}>Documentos</NavLink>

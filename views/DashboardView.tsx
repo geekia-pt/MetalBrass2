@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Company, KPIData } from '../types';
 import KpiCard from '../components/KpiCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { AlertCircle, FileText, CheckCircle2, Users, Euro, HardHat, MapPin, ChevronRight } from 'lucide-react';
+import { AlertCircle, FileText, CheckCircle2, Users, Euro, HardHat, MapPin, ChevronRight, X, Download, GitPullRequestArrow, Clock, FolderOpen, Home, Truck, Factory, Database, UserPlus, Settings } from 'lucide-react';
 
 const MOCK_CHART_DATA = [
   { name: 'Jan', val: 400 },
@@ -28,6 +28,8 @@ const PAYROLL: Record<PayrollPeriod, string> = { day: '€ 14.2k', week: '€ 71
 
 const DashboardView: React.FC<{ company: Company }> = ({ company }) => {
   const [payrollPeriod, setPayrollPeriod] = useState<PayrollPeriod>('month');
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showAllocateModal, setShowAllocateModal] = useState(false);
 
   const kpis: KPIData[] = [
     { title: 'Utilização', value: '92.4%', trend: 2.1, label: 'vs mês passado' },
@@ -45,8 +47,8 @@ const DashboardView: React.FC<{ company: Company }> = ({ company }) => {
           <p className="text-sm text-slate-500">Monitoramento global de <span className="font-semibold text-slate-700">{company.name}</span></p>
         </div>
         <div className="flex gap-2">
-          <button className="px-4 py-2 text-sm font-semibold border border-slate-200 rounded-md bg-white hover:bg-slate-50 transition-colors">Exportar Relatório</button>
-          <button className="px-4 py-2 text-sm font-semibold bg-industrial text-white rounded-md hover:bg-slate-800 transition-colors">Nova Alocação</button>
+          <button onClick={() => setShowExportModal(true)} className="px-4 py-2 text-sm font-semibold border border-slate-200 rounded-md bg-white hover:bg-slate-50 transition-colors flex items-center gap-2"><Download size={16} /> Exportar Relatório</button>
+          <button onClick={() => setShowAllocateModal(true)} className="px-4 py-2 text-sm font-semibold bg-industrial text-white rounded-md hover:bg-slate-800 transition-colors flex items-center gap-2"><GitPullRequestArrow size={16} /> Nova Alocação</button>
         </div>
       </div>
 
@@ -174,6 +176,106 @@ const DashboardView: React.FC<{ company: Company }> = ({ company }) => {
           <button className="mt-4 w-full py-2 text-sm font-bold text-industrial-steel hover:bg-slate-50 border border-slate-100 rounded transition-colors">Ver todos os alertas</button>
         </div>
       </div>
+
+      {/* Quick Links */}
+      <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
+        <h2 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-widest">Atalhos Rápidos</h2>
+        <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
+          {[
+            { icon: UserPlus, label: 'Candidatos', href: '#/candidates' },
+            { icon: Users, label: 'Pessoal', href: '#/personnel' },
+            { icon: HardHat, label: 'Projetos', href: '#/projects' },
+            { icon: FolderOpen, label: 'Documentos', href: '#/documents' },
+            { icon: Clock, label: 'Timesheet', href: '#/timesheet' },
+            { icon: GitPullRequestArrow, label: 'Alocações', href: '#/allocations' },
+            { icon: Home, label: 'Alojamentos', href: '#/housings' },
+            { icon: Factory, label: 'Indústria', href: '#/industry' },
+            { icon: Truck, label: 'Frota', href: '#/fleet' },
+            { icon: Database, label: 'Base Dados', href: '#/database' },
+            { icon: Download, label: 'Exportações', href: '#/exports' },
+            { icon: Settings, label: 'Configurações', href: '#/settings' },
+          ].map(link => (
+            <a
+              key={link.label}
+              href={link.href}
+              className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-slate-50 transition-colors group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-industrial group-hover:text-white transition-colors">
+                <link.icon size={18} />
+              </div>
+              <span className="text-[10px] font-bold text-slate-500 text-center">{link.label}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowExportModal(false)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900">Exportar Relatório</h2>
+              <button onClick={() => setShowExportModal(false)} className="p-1 hover:bg-slate-100 rounded"><X size={20} className="text-slate-400" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-600">Selecione o que deseja exportar:</p>
+              <div className="space-y-2">
+                {['Dashboard Geral', 'Timesheet / Horas', 'Pessoal Completo', 'Projetos & Orçamentos', 'Compliance', 'Frota', 'Alojamentos'].map(item => (
+                  <label key={item} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100">
+                    <input type="checkbox" className="w-4 h-4 rounded border-slate-300" />
+                    <span className="text-sm font-medium text-slate-700">{item}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Formato</label>
+                <div className="flex gap-2">
+                  <button className="flex-1 py-2 text-sm font-bold bg-industrial text-white rounded-md">Excel</button>
+                  <button className="flex-1 py-2 text-sm font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded-md">PDF</button>
+                  <button className="flex-1 py-2 text-sm font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded-md">CSV</button>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-100 flex justify-end">
+              <button onClick={() => setShowExportModal(false)} className="px-6 py-2.5 text-sm font-bold bg-compliance-green text-white rounded-md hover:opacity-90 flex items-center gap-2">
+                <Download size={16} /> Exportar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Allocation Modal */}
+      {showAllocateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowAllocateModal(false)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900">Nova Alocação</h2>
+              <button onClick={() => setShowAllocateModal(false)} className="p-1 hover:bg-slate-100 rounded"><X size={20} className="text-slate-400" /></button>
+            </div>
+            <div className="p-6 space-y-3">
+              <p className="text-sm text-slate-600 mb-2">O que deseja alocar?</p>
+              {[
+                { icon: Users, label: 'Funcionário a Obra', desc: 'Alocar operário disponível', href: '#/allocations' },
+                { icon: Truck, label: 'Viatura a Obra', desc: 'Atribuir veículo a projeto', href: '#/fleet' },
+                { icon: Home, label: 'Alojamento', desc: 'Atribuir hospedagem', href: '#/housings' },
+              ].map(item => (
+                <a key={item.label} href={item.href} onClick={() => setShowAllocateModal(false)} className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100 hover:border-industrial hover:bg-slate-100 transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center text-slate-500">
+                    <item.icon size={20} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">{item.label}</p>
+                    <p className="text-xs text-slate-500">{item.desc}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
