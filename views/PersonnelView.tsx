@@ -39,6 +39,10 @@ const PersonnelView: React.FC = () => {
   const [actionsOpen, setActionsOpen] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showMessageModal, setShowMessageModal] = useState<Worker | null>(null);
+  const [showDocsModal, setShowDocsModal] = useState<Worker | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState<Worker | null>(null);
+  const [showDeactivateModal, setShowDeactivateModal] = useState<Worker | null>(null);
 
   const filtered = MOCK_WORKERS.filter(w =>
     w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -141,20 +145,20 @@ const PersonnelView: React.FC = () => {
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setActionsOpen(null)} />
                         <div className="absolute right-4 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden">
-                          <button className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+                          <button onClick={() => { setShowMessageModal(worker); setActionsOpen(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
                             <MessageSquare size={16} className="text-slate-400" />
                             Enviar Mensagem
                           </button>
-                          <button className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+                          <button onClick={() => { setShowDocsModal(worker); setActionsOpen(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
                             <FileUp size={16} className="text-slate-400" />
                             Atualizar Documentação
                           </button>
-                          <button className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+                          <button onClick={() => { setShowProfileModal(worker); setActionsOpen(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
                             <Eye size={16} className="text-slate-400" />
                             Ver Perfil Completo
                           </button>
                           <div className="border-t border-slate-100" />
-                          <button className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors text-left">
+                          <button onClick={() => { setShowDeactivateModal(worker); setActionsOpen(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors text-left">
                             <UserX size={16} />
                             Desativar Colaborador
                           </button>
@@ -168,6 +172,185 @@ const PersonnelView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Send Message Modal */}
+      {showMessageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowMessageModal(null)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900">Enviar Mensagem</h2>
+              <button onClick={() => setShowMessageModal(null)} className="p-1 hover:bg-slate-100 rounded"><X size={20} className="text-slate-400" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="p-3 bg-slate-50 rounded-lg flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-industrial-steel flex items-center justify-center text-white text-xs font-bold">{showMessageModal.name.split(' ').map(n => n[0]).join('')}</div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900">{showMessageModal.name}</p>
+                  <p className="text-xs text-slate-500">{showMessageModal.phone}</p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Canal</label>
+                <div className="flex gap-2">
+                  <button className="flex-1 py-2 text-sm font-bold bg-green-50 text-green-700 border border-green-200 rounded-md">WhatsApp</button>
+                  <button className="flex-1 py-2 text-sm font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-md">Email</button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Template Rápido</label>
+                <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-sm">
+                  <option value="">Sem template</option>
+                  <option>Pedido de Documentação</option>
+                  <option>Convocação para Obra</option>
+                  <option>Aviso de Vencimento A1</option>
+                  <option>Boas-vindas</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Mensagem</label>
+                <textarea rows={4} placeholder="Escreva a sua mensagem..." className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-sm outline-none resize-none" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-100 flex gap-3 justify-end">
+              <button onClick={() => setShowMessageModal(null)} className="px-4 py-2.5 text-sm font-semibold border border-slate-200 rounded-md hover:bg-slate-50">Cancelar</button>
+              <button className="px-6 py-2.5 text-sm font-bold bg-compliance-green text-white rounded-md hover:opacity-90">Enviar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Docs Modal */}
+      {showDocsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowDocsModal(null)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900">Documentação — {showDocsModal.name}</h2>
+              <button onClick={() => setShowDocsModal(null)} className="p-1 hover:bg-slate-100 rounded"><X size={20} className="text-slate-400" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                {[
+                  { doc: 'Passaporte', status: 'Válido', exp: '10/2026' },
+                  { doc: 'Certificado A1', status: 'Vencendo', exp: '4 dias' },
+                  { doc: 'Contrato', status: 'Assinado', exp: '01/2025' },
+                  { doc: 'Ficha Médica', status: 'Pendente', exp: '—' },
+                ].map((d, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <div>
+                      <p className="text-sm font-bold text-slate-700">{d.doc}</p>
+                      <p className="text-[10px] text-slate-400">Exp: {d.exp}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${d.status === 'Válido' ? 'bg-green-50 text-green-700' : d.status === 'Vencendo' ? 'bg-amber-50 text-amber-700' : d.status === 'Pendente' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600'}`}>{d.status}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-industrial/30 transition-colors cursor-pointer">
+                <FileUp size={24} className="mx-auto text-slate-300 mb-2" />
+                <p className="text-xs text-slate-500">Arraste ficheiros ou clique para upload</p>
+                <p className="text-[10px] text-slate-400 mt-1">PDF, JPG, PNG até 10MB</p>
+              </div>
+              <button className="w-full py-2.5 text-sm font-bold border border-green-200 text-green-700 bg-green-50 rounded-md">Pedir via WhatsApp</button>
+            </div>
+            <div className="p-6 border-t border-slate-100 flex justify-end">
+              <button onClick={() => setShowDocsModal(null)} className="px-6 py-2.5 text-sm font-bold bg-industrial text-white rounded-md hover:bg-slate-800">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Profile Modal */}
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowProfileModal(null)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-industrial-steel flex items-center justify-center text-white text-lg font-bold">{showProfileModal.name.split(' ').map(n => n[0]).join('')}</div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">{showProfileModal.name}</h2>
+                  <p className="text-xs text-slate-500">{showProfileModal.role} • NIF: {showProfileModal.nif}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowProfileModal(null)} className="p-1 hover:bg-slate-100 rounded"><X size={20} className="text-slate-400" /></button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Dados Pessoais</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: 'Telefone', value: showProfileModal.phone },
+                    { label: 'Email', value: showProfileModal.email },
+                    { label: 'Custo/Hora', value: `€ ${showProfileModal.hourlyCost}` },
+                    { label: 'Projeto Atual', value: showProfileModal.project || '—' },
+                    { label: 'Link Operário', value: generateWorkerUrl(showProfileModal.name) },
+                    { label: 'Faturamento Anual', value: ANNUAL_REVENUE[showProfileModal.id] || '€ 42.240' },
+                  ].map((item, i) => (
+                    <div key={i} className="p-3 bg-slate-50 rounded-lg">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">{item.label}</p>
+                      <p className="text-sm font-bold text-slate-900 mt-0.5">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Skills</h3>
+                <div className="flex gap-1.5 flex-wrap">
+                  {showProfileModal.skillTags.map(s => (
+                    <span key={s} className="px-2 py-1 text-[10px] font-bold bg-slate-100 text-slate-600 rounded border border-slate-200 uppercase">{s}</span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Histórico de Obras</h3>
+                <div className="space-y-2">
+                  {['Obra Vale A (2023)', 'Plataforma Sul (2023)', 'Refinaria Sines (2022)'].map((h, i) => (
+                    <div key={i} className="p-2 bg-slate-50 rounded text-sm text-slate-600">{h}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deactivate Confirmation Modal */}
+      {showDeactivateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowDeactivateModal(null)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-red-600">Desativar Colaborador</h2>
+              <button onClick={() => setShowDeactivateModal(null)} className="p-1 hover:bg-slate-100 rounded"><X size={20} className="text-slate-400" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
+                <p className="text-sm text-red-800">Tem certeza que deseja desativar <b>{showDeactivateModal.name}</b>? Esta ação pode ser revertida posteriormente.</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Motivo *</label>
+                <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-sm">
+                  <option value="">Selecione um motivo</option>
+                  <option>Fim de Contrato</option>
+                  <option>Despedimento</option>
+                  <option>Abandono de Posto</option>
+                  <option>Licença Prolongada</option>
+                  <option>Outro</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Observações</label>
+                <textarea rows={3} placeholder="Detalhes adicionais..." className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-sm outline-none resize-none" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-100 flex gap-3 justify-end">
+              <button onClick={() => setShowDeactivateModal(null)} className="px-4 py-2.5 text-sm font-semibold border border-slate-200 rounded-md hover:bg-slate-50">Cancelar</button>
+              <button className="px-6 py-2.5 text-sm font-bold bg-compliance-red text-white rounded-md hover:opacity-90">Confirmar Desativação</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Worker Modal */}
       {showCreateModal && (

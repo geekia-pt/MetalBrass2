@@ -13,6 +13,9 @@ import SettingsView from './views/SettingsView';
 import AllocationsView from './views/AllocationsView';
 import HousingsView from './views/HousingsView';
 import ExportsView from './views/ExportsView';
+import IndustryView from './views/IndustryView';
+import FleetView from './views/FleetView';
+import DatabaseView from './views/DatabaseView';
 import { Company } from './types';
 
 const COMPANIES: Company[] = [
@@ -61,6 +64,9 @@ const App: React.FC = () => {
               <Route path="/allocations" element={<AllocationsView />} />
               <Route path="/housings" element={<HousingsView />} />
               <Route path="/exports" element={<ExportsView />} />
+              <Route path="/industry" element={<IndustryView />} />
+              <Route path="/fleet" element={<FleetView />} />
+              <Route path="/database" element={<DatabaseView />} />
               <Route path="/settings" element={<SettingsView />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

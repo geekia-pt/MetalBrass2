@@ -15,12 +15,12 @@ const MOCK_CHART_DATA = [
 ];
 
 const ACTIVE_PROJECTS = [
-  { id: 'p1', name: 'Renovação Central Hidrelétrica', client: 'EDF France', country: '🇫🇷', workers: 24, maxWorkers: 30, revenue: 48200, progress: 45 },
-  { id: 'p2', name: 'Estruturas Metálicas Porto', client: 'GaliPort', country: '🇵🇹', workers: 12, maxWorkers: 15, revenue: 18900, progress: 82 },
-  { id: 'p3', name: 'Manutenção Eólica Norte', client: 'IberWind', country: '🇪🇸', workers: 8, maxWorkers: 12, revenue: 0, progress: 0 },
-  { id: 'p4', name: 'Oleoduto Trans-Alpino', client: 'Shell Intl', country: '🇧🇪', workers: 30, maxWorkers: 35, revenue: 62100, progress: 15 },
-  { id: 'p5', name: 'Ponte Ferroviária Sul', client: 'SNCF', country: '🇫🇷', workers: 18, maxWorkers: 20, revenue: 31400, progress: 60 },
-  { id: 'p6', name: 'Refinaria Sines', client: 'Galp Energia', country: '🇵🇹', workers: 45, maxWorkers: 50, revenue: 89300, progress: 35 },
+  { id: 'p1', name: 'Renovação Central Hidrelétrica', client: 'EDF France', country: '🇫🇷', responsible: 'Carlos Mendes', workers: 24, maxWorkers: 30, revenue: 48200, progress: 45 },
+  { id: 'p2', name: 'Estruturas Metálicas Porto', client: 'GaliPort', country: '🇵🇹', responsible: 'Ana Oliveira', workers: 12, maxWorkers: 15, revenue: 18900, progress: 82 },
+  { id: 'p3', name: 'Manutenção Eólica Norte', client: 'IberWind', country: '🇪🇸', responsible: 'Ricardo Santos', workers: 8, maxWorkers: 12, revenue: 0, progress: 0 },
+  { id: 'p4', name: 'Oleoduto Trans-Alpino', client: 'Shell Intl', country: '🇧🇪', responsible: 'Marcos Silva', workers: 30, maxWorkers: 35, revenue: 62100, progress: 15 },
+  { id: 'p5', name: 'Ponte Ferroviária Sul', client: 'SNCF', country: '🇫🇷', responsible: 'Juliana Lima', workers: 18, maxWorkers: 20, revenue: 31400, progress: 60 },
+  { id: 'p6', name: 'Refinaria Sines', client: 'Galp Energia', country: '🇵🇹', responsible: 'Paulo Martins', workers: 45, maxWorkers: 50, revenue: 89300, progress: 35 },
 ];
 
 type PayrollPeriod = 'day' | 'week' | 'month';
@@ -94,6 +94,7 @@ const DashboardView: React.FC<{ company: Company }> = ({ company }) => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-slate-900 truncate">{project.name}</p>
                   <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">{project.country} {project.client}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Resp: {project.responsible}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 mb-3 text-xs">

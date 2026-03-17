@@ -13,7 +13,10 @@ import {
   Smartphone,
   GitPullRequestArrow,
   Home,
-  Download
+  Download,
+  Factory,
+  Truck,
+  Database
 } from 'lucide-react';
 import { Company } from '../types';
 
@@ -103,9 +106,12 @@ const Sidebar: React.FC<SidebarProps> = ({ companies, activeCompany, onCompanyCh
         <NavLink to="/timesheet" icon={Clock}>Timesheet</NavLink>
         <NavLink to="/allocations" icon={GitPullRequestArrow}>Alocações</NavLink>
         <NavLink to="/housings" icon={Home}>Alojamentos</NavLink>
+        <NavLink to="/industry" icon={Factory}>Indústria</NavLink>
+        <NavLink to="/fleet" icon={Truck}>Frota</NavLink>
 
         <div className="mt-8">
           <p className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sistema</p>
+          <NavLink to="/database" icon={Database}>Base de Dados</NavLink>
           <NavLink to="/exports" icon={Download}>Exportações</NavLink>
           <NavLink to="/settings" icon={Settings}>Configurações</NavLink>
         </div>
