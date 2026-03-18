@@ -3130,6 +3130,259 @@ volumes:
 
 ---
 
+## 18. Infraestrutura: Cloudflare Tunnel (Acesso Fixo a VPS)
+
+### 18.1 Porquê Cloudflare Tunnel
+
+Toda a infraestrutura do MetalBrass OS reside na VPS. Para dar acesso externo seguro sem expor IP publico, portas abertas ou configurar SSL manualmente, usamos Cloudflare Tunnel (gratis).
+
+O tunnel cria uma conexao encriptada OUTBOUND-ONLY da VPS para a edge da Cloudflare. Nenhuma porta precisa estar aberta na VPS. SSL e automatico. DDoS protection incluida. CDN global.
+
+### 18.2 Arquitectura de Rede
+
+```
+Utilizadores (browser/WhatsApp)
+         │
+         ▼
+Cloudflare Edge Network
+├── SSL/TLS automatico
+├── DDoS protection
+├── CDN (cache static assets)
+├── WAF (firewall)
+         │
+         ▼ (tunnel encriptado, outbound-only)
+         │
+VPS (cloudflared daemon)
+├── app.metalbrass.com       → React Dashboard (porta 3001)
+├── api.metalbrass.com       → FastAPI Backend (porta 8000)
+├── nexus.metalbrass.com     → Worker App (porta 3001)
+├── docs.metalbrass.com      → API Swagger (porta 8000/docs)
+│
+├── PostgreSQL + pgvector    (porta 5432, so local)
+├── PgBouncer                (porta 6432, so local)
+├── Ollama + Qwen 2.5       (porta 11434, so local)
+└── OpenClaw Gateway         (7 agentes autonomos)
+```
+
+### 18.3 Subdominios
+
+| Subdominio | Servico | Porta VPS | Acesso |
+|------------|---------|-----------|--------|
+| `app.metalbrass.com` | Dashboard React | 3001 | Equipa admin, gestores, validadores |
+| `api.metalbrass.com` | FastAPI Backend | 8000 | Frontend, agentes OpenClaw |
+| `nexus.metalbrass.com` | Worker App React | 3001 | Operarios (login + ponto digital) |
+| `docs.metalbrass.com` | Swagger/OpenAPI | 8000 | Developers |
+
+URL do operario: `nexus.metalbrass.com/ricardo-santos` + senha
+
+### 18.4 Setup Cloudflare Tunnel na VPS
+
+```bash
+# =====================================================
+# PASSO 1: Instalar cloudflared
+# =====================================================
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
+  -o /usr/local/bin/cloudflared
+chmod +x /usr/local/bin/cloudflared
+
+# =====================================================
+# PASSO 2: Autenticar (abre URL no browser)
+# =====================================================
+cloudflared login
+# Selecionar dominio metalbrass.com no browser
+
+# =====================================================
+# PASSO 3: Criar tunnel permanente
+# =====================================================
+cloudflared tunnel create metalbras-os
+# Output: Created tunnel metalbras-os with id a1b2c3d4-e5f6-...
+# Guardar o UUID!
+
+# =====================================================
+# PASSO 4: Configurar routing
+# =====================================================
+cat > /root/.cloudflared/config.yml << 'CLOUDFLARE_CONFIG'
+tunnel: a1b2c3d4-e5f6-xxxx-xxxx-xxxxxxxxxxxx
+credentials-file: /root/.cloudflared/a1b2c3d4-e5f6-xxxx-xxxx-xxxxxxxxxxxx.json
+
+# Opcoes globais
+originRequest:
+  connectTimeout: 30s
+  noTLSVerify: true
+
+ingress:
+  # API Backend (FastAPI)
+  - hostname: api.metalbrass.com
+    service: http://localhost:8000
+    originRequest:
+      connectTimeout: 60s
+
+  # Dashboard Admin (React)
+  - hostname: app.metalbrass.com
+    service: http://localhost:3001
+
+  # Worker App (React - mesmo build, rota diferente)
+  - hostname: nexus.metalbrass.com
+    service: http://localhost:3001
+
+  # API Docs (Swagger)
+  - hostname: docs.metalbrass.com
+    service: http://localhost:8000
+
+  # Catch-all obrigatorio
+  - service: http_status:404
+CLOUDFLARE_CONFIG
+
+# =====================================================
+# PASSO 5: Criar DNS records automaticamente
+# =====================================================
+cloudflared tunnel route dns metalbras-os app.metalbrass.com
+cloudflared tunnel route dns metalbras-os api.metalbrass.com
+cloudflared tunnel route dns metalbras-os nexus.metalbrass.com
+cloudflared tunnel route dns metalbras-os docs.metalbrass.com
+
+# =====================================================
+# PASSO 6: Testar
+# =====================================================
+cloudflared tunnel run metalbras-os
+# Verificar: https://app.metalbrass.com deve carregar o dashboard
+
+# =====================================================
+# PASSO 7: Instalar como servico systemd (24/7)
+# =====================================================
+cloudflared service install
+systemctl enable cloudflared
+systemctl start cloudflared
+systemctl status cloudflared
+
+# =====================================================
+# VERIFICAR TUDO
+# =====================================================
+cloudflared tunnel list
+cloudflared tunnel info metalbras-os
+curl https://api.metalbrass.com/health
+curl https://app.metalbrass.com
+```
+
+### 18.5 Seguranca Adicional (Cloudflare Access)
+
+Para proteger o dashboard admin, podemos adicionar Cloudflare Access (gratis ate 50 utilizadores):
+
+```
+Cloudflare Dashboard → Zero Trust → Access → Applications
+
+Regra para app.metalbrass.com:
+- Policy: Allow
+- Include: Emails ending in @metalbras.pt
+- Require: One-time PIN (email)
+
+Resultado: Ao aceder app.metalbrass.com, pede email @metalbras.pt
+e envia codigo. Sem login = sem acesso.
+
+nexus.metalbrass.com NAO tem Access (operarios acedem livremente com
+a sua password na app).
+```
+
+### 18.6 Vantagens vs Alternativas
+
+| Feature | Cloudflare Tunnel | Nginx + Let's Encrypt | Ngrok |
+|---------|-------------------|----------------------|-------|
+| Custo | Gratis | Gratis (setup manual) | Pago ($8+/mes) |
+| SSL | Automatico | Certbot + renovacao | Automatico |
+| IP publico | Nao exposto | Exposto | Nao exposto |
+| Portas abertas | Zero | 80 + 443 | Zero |
+| DDoS | Incluido | Nenhum | Basico |
+| CDN | Global | Nenhum | Nenhum |
+| Dominio fixo | Sim (teu dominio) | Sim | Pago |
+| Multiplos subdominios | Ilimitado | Manual | Limitado |
+| Setup | 5 minutos | 30+ minutos | 5 minutos |
+| Producao | Sim | Sim | Nao recomendado |
+
+### 18.7 Integracao com Docker Compose
+
+Adicionar ao docker-compose.yml:
+
+```yaml
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel run metalbras-os
+    volumes:
+      - /root/.cloudflared:/etc/cloudflared
+    restart: unless-stopped
+    depends_on:
+      - api
+      - frontend
+```
+
+### 18.8 Nota sobre WhatsApp
+
+O WhatsApp funciona via OpenClaw channel na VPS (scan QR code). O OpenClaw conecta-se diretamente ao WhatsApp Web, NAO usa WhatsApp Business API. Nao precisa de Cloudflare Tunnel para o WhatsApp - o OpenClaw faz conexao outbound direta.
+
+O webhook do bot (para o backend receber eventos) funciona internamente na VPS:
+- OpenClaw → POST http://localhost:8000/api/webhook/whatsapp
+- Tudo local, sem necessidade de URL publica para webhooks.
+
+---
+
+## 19. Resumo da Stack Completa
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                CLOUDFLARE EDGE (gratis)                  │
+│  SSL + CDN + DDoS + WAF                                │
+│  app.metalbrass.com | api. | nexus. | docs.             │
+└──────────────────────┬──────────────────────────────────┘
+                       │ Tunnel (encriptado, outbound-only)
+┌──────────────────────▼──────────────────────────────────┐
+│                    VPS (tudo aqui)                        │
+│                                                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐ │
+│  │ React (3001) │  │ FastAPI(8000)│  │ Swagger (8000)│ │
+│  │ Dashboard +  │  │ REST API     │  │ /docs         │ │
+│  │ Worker App   │  │ JWT Auth     │  │               │ │
+│  └──────────────┘  └──────┬───────┘  └───────────────┘ │
+│                           │                              │
+│  ┌────────────────────────▼─────────────────────────┐   │
+│  │        PostgreSQL + pgvector (5432)               │   │
+│  │  20+ tabelas relacionais                          │   │
+│  │  5 tabelas embeddings (HNSW)                      │   │
+│  │  PgBouncer (6432) connection pool                 │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐ │
+│  │Ollama (11434)│  │ OpenClaw     │  │ cloudflared   │ │
+│  │ Qwen 2.5    │  │ 7 Agentes    │  │ tunnel daemon │ │
+│  │ OCR + embed  │  │ WhatsApp     │  │               │ │
+│  └──────────────┘  │ Heartbeats   │  └───────────────┘ │
+│                    │ Cron jobs    │                      │
+│                    └──────────────┘                      │
+│                                                          │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              File Storage (/data/)                │   │
+│  │  /data/documents/  (PDFs, scans, fotos)          │   │
+│  │  /data/exports/    (Primavera, ONSS, CSV)        │   │
+│  │  /data/backups/    (pg_dump diario)              │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Portas internas (so localhost, NADA exposto)
+
+| Servico | Porta | Acesso |
+|---------|-------|--------|
+| React Frontend | 3001 | Via Cloudflare Tunnel |
+| FastAPI Backend | 8000 | Via Cloudflare Tunnel |
+| PostgreSQL | 5432 | So local (PgBouncer) |
+| PgBouncer | 6432 | So local (FastAPI) |
+| Ollama | 11434 | So local (FastAPI + OpenClaw) |
+| OpenClaw | interno | So local (WhatsApp outbound) |
+| cloudflared | outbound | Conexao a Cloudflare Edge |
+
+**Zero portas abertas no firewall da VPS.** Tudo via Cloudflare Tunnel.
+
+---
+
 **FIM DO PRD**
 
-*Documento vivo - atualizar conforme decisoes de implementacao evoluem.*
+*Documento vivo - atualizar conforme decisoes de implementacao evoluem. Versao: 3.0 (2026-03-17)*
