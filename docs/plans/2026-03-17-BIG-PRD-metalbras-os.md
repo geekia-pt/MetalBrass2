@@ -23,6 +23,7 @@
 12. [Fases de Desenvolvimento](#12-fases-de-desenvolvimento)
 13. [Requisitos Nao-Funcionais](#13-requisitos-nao-funcionais)
 14. [Riscos e Mitigacoes](#14-riscos-e-mitigacoes)
+15. [Agentes Autonomos OpenClaw](#15-agentes-autonomos-openclaw)
 
 ---
 
@@ -2030,6 +2031,297 @@ LOG_LEVEL=info
 - Ordenacao: `?sort=created_at&order=desc`
 - Resposta padrao: `{ data: T, meta: { page, limit, total } }`
 - Erros: `{ error: { code: string, message: string, details?: any } }`
+
+---
+
+## 15. Agentes Autonomos OpenClaw
+
+O sistema MetalBrass OS utiliza 7 agentes autonomos OpenClaw na VPS, cada um com workspace isolado, memoria persistente, heartbeat proprio e identidade unica. Os agentes correm 24/7 e comunicam entre si via API e WhatsApp.
+
+### 15.1 Arquitetura Multi-Agent
+
+```
+KIMI CLAW (Orquestrador - VPS)
+├── OpenClaw Gateway (daemon systemd)
+│   ├── WhatsApp Channel (QR code link)
+│   ├── Kimi K2.5 (LLM principal)
+│   ├── Qwen 2.5 via Ollama (OCR + matching)
+│   ├── PostgreSQL (dados)
+│   └── API Backend (comunicacao com dashboard)
+│
+├── workspace-recruiter/      → Agente 1: Recrutador
+├── workspace-doc-validator/  → Agente 2: Validador Docs
+├── workspace-compliance/     → Agente 3: Compliance Monitor
+├── workspace-allocator/      → Agente 4: Alocador Inteligente
+├── workspace-onboarding/     → Agente 5: Onboarding Assistant
+├── workspace-timesheet/      → Agente 6: Timesheet Monitor
+└── workspace-export/         → Agente 7: Export & Declarations
+```
+
+### 15.2 Ficheiros por Agente
+
+Cada workspace contem 6 ficheiros de configuracao:
+
+| Ficheiro | Funcao |
+|----------|--------|
+| **SOUL.md** | Personalidade, missao, valores, limites comportamentais |
+| **IDENTITY.md** | Nome, emoji, apresentacao, tom de comunicacao |
+| **USER.md** | Info da empresa, infraestrutura, contactos, agentes relacionados |
+| **AGENTS.md** | Regras operacionais detalhadas, fluxos, decisoes, metricas |
+| **MEMORY.md** | Memoria persistente (atualizada automaticamente pelo agente) |
+| **HEARTBEAT.md** | Checklist autonoma executada periodicamente sem input humano |
+
+### 15.3 Agente 1: Recrutador
+
+- **Workspace**: `workspace-recruiter`
+- **Modelo**: Kimi K2.5
+- **Heartbeat**: 15 minutos
+- **Canal**: WhatsApp (contacto direto com candidatos)
+- **Idiomas**: PT, FR, ES, EN, UA, RO
+
+**Missao**: Receber candidatos via WhatsApp, guiar no processo de candidatura, recolher 10 tipos de documentos (um de cada vez), confirmar rececao, e registar na base de dados.
+
+**Documentos recolhidos**:
+1. Passaporte
+2. Cartao Cidadao / BI
+3. Certificado A1
+4. Seguro de Saude
+5. Certificado Aptidao de Saude
+6. Diploma Seguranca no Trabalho
+7. Diploma Trabalho em Altura
+8. Certidao de Registo Criminal
+9. IBAN / Dados Bancarios
+10. Foto 3x4
+
+**Fluxo**: Saudacao → Dados pessoais → Perfil profissional → Documentos (1 a 1) → Confirmacao → Registar na DB
+
+**Cron**: Diariamente 9h - followup candidatos com docs incompletos
+
+### 15.4 Agente 2: Validador de Documentos
+
+- **Workspace**: `workspace-doc-validator`
+- **Modelo**: Qwen 2.5:32b (via Ollama - especializado em OCR)
+- **Heartbeat**: 30 minutos
+- **Canal**: Interno (nao comunica com candidatos)
+
+**Missao**: Processar OCR de cada documento recebido, extrair dados, validar autenticidade e validade, aprovar ou rejeitar automaticamente.
+
+**Regras de decisao**:
+- Confianca > 90% + campos OK + validade OK → Aprovacao automatica
+- Confianca 70-90% → Aprovacao com flag revisao
+- Confianca < 70% → Revisao manual obrigatoria
+- Documento expirado → Rejeicao automatica
+
+**Validacoes por tipo**: Passaporte (MRZ, validade > 6 meses), A1 (pais correto, periodo valido), Aptidao Saude (< 12 meses), Certidao Criminal (< 6 meses), IBAN (checksum valido)
+
+### 15.5 Agente 3: Compliance Monitor
+
+- **Workspace**: `workspace-compliance`
+- **Modelo**: Kimi K2.5
+- **Heartbeat**: 1 hora
+- **Canal**: WhatsApp (alertas a operarios e gestores)
+
+**Missao**: Monitorizar continuamente a validade de TODOS os documentos de TODOS os operarios ativos. Zero tolerancia a documentacao invalida.
+
+**5 niveis de alerta**:
+- VERDE (> 30 dias): OK
+- AMARELO (15-30 dias): alerta dashboard
+- LARANJA (7-14 dias): WhatsApp operario + gestor
+- VERMELHO (< 7 dias): bloquear alocacoes + admin
+- PRETO (expirado): alerta critico + gestor obra + nao-conformidade
+
+**Regras por pais**: PT (Passaporte, Contrato, Seguro, Aptidao, Seguranca), FR (+ A1, Certidao Criminal), BE (+ ONSS), ES (+ A1)
+
+**Crons**: Diario 6h (scan completo), Semanal segunda 8h (relatorio), Mensal dia 1 (consolidado)
+
+### 15.6 Agente 4: Alocador Inteligente
+
+- **Workspace**: `workspace-allocator`
+- **Modelo**: Kimi K2.5
+- **Heartbeat**: 1 hora
+- **Canal**: Interno (comunica com gestores via dashboard)
+
+**Missao**: Matching inteligente entre operarios disponiveis e vagas em obras, considerando skills, compliance, custo, proximidade e historico.
+
+**Dois modos**:
+- **Por Obra**: Obra tem vagas → encontrar candidatos compativeis
+- **Por Funcionario**: Operario disponivel → encontrar obras compativeis
+
+**Criterios de matching** (por ordem de peso):
+1. Skills match (TIG, MIG, ASME, certificacoes obrigatorias)
+2. Compliance 100% para o pais destino (via agente compliance)
+3. Custo/hora dentro do orcamento da obra
+4. Proximidade / alojamento disponivel na zona
+5. Historico positivo em obras similares
+
+**Output**: Top 5 candidatos com score + sugestao de alojamento + viatura. NUNCA aloca automaticamente - apenas sugere.
+
+### 15.7 Agente 5: Onboarding Assistant
+
+- **Workspace**: `workspace-onboarding`
+- **Modelo**: Kimi K2.5
+- **Heartbeat**: 30 minutos
+- **Canal**: WhatsApp (contacto direto com operarios)
+- **Idiomas**: PT, FR, ES, EN, UA
+
+**Missao**: Guiar operario desde a confirmacao da alocacao ate ao primeiro dia na obra.
+
+**Fluxo em 5 etapas (3-7 dias)**:
+1. **Dia 0**: Parabens + info da obra (nome, cliente, pais, cidade, endereco, horario, responsavel)
+2. **Dia 0-1**: Info alojamento (endereco, regras, colegas, inventario, transporte ate obra)
+3. **Dia 1-2**: Treinamento seguranca (envia PDF/video, exige confirmacao "SIM", regista na DB)
+4. **Dia 2-3**: Contrato (link nexus.metalbrass.com/nome, senha enviada separadamente, assinatura digital)
+5. **Vespera**: Lembrete "Amanha e o seu 1o dia! Apresente-se as [hora] em [endereco]"
+
+**Escalonamento**: Sem resposta 48h → lembrete. 72h → alerta admin.
+
+### 15.8 Agente 6: Timesheet Monitor
+
+- **Workspace**: `workspace-timesheet`
+- **Modelo**: Kimi K2.5
+- **Heartbeat**: 30 minutos (seg-sex 7h-21h)
+- **Canal**: WhatsApp (lembretes a operarios)
+
+**Missao**: Monitorizar registos de horas de todos os operarios, verificar GPS, detetar overtime, garantir precisao para faturacao.
+
+**Verificacoes**:
+- GPS: clock-in dentro do geo-fence da obra? Se nao → flag location_alert
+- Overtime: > 8h/dia flag, > 10h justificacao, > 12h alerta gestor
+- Missing: operario ativo sem registo as 20h → lembrete WhatsApp
+- Custo: horas × custo/hora por operario
+
+**Crons**: Diario 20h (lembretes), Diario 21h (totais por obra), Semanal sexta 18h (resumo gestores)
+
+### 15.9 Agente 7: Export & Declarations
+
+- **Workspace**: `workspace-export`
+- **Modelo**: Kimi K2.5
+- **Heartbeat**: 2 horas
+- **Canal**: Interno (notifica admin quando exports prontos)
+
+**Missao**: Gerar automaticamente ficheiros para Primavera (ERP), declaracoes ONSS (Belgica), Seguranca Social (Portugal) e Financas (Portugal).
+
+**Exports mensais (dia 1, 8h)**:
+- Primavera: timesheets + faturacao (formato Primavera)
+- ONSS: declaracao por operario na Belgica (XML)
+- DMR Seguranca Social: remuneracoes PT
+- Modelo 10 Financas: dados fiscais PT
+
+**Regra critica**: NUNCA submete declaracoes governamentais automaticamente. Prepara, disponibiliza para download, notifica admin para revisao e aprovacao.
+
+### 15.10 Fluxo entre Agentes
+
+```
+CANDIDATO (WhatsApp)
+      │
+      ▼
+[1] RECRUTADOR ──doc──▶ [2] VALIDADOR DOCS
+      │                        │
+      │ (candidato completo)   │ (doc validado/rejeitado)
+      ▼                        ▼
+   Base de Dados ◀──────── Documentos validados
+      │
+      │ (candidato aprovado internamente)
+      ▼
+[3] COMPLIANCE ◀──── Verifica docs para pais destino
+      │
+      │ (compliance OK)
+      ▼
+[4] ALOCADOR ──match──▶ Gestor aprova no dashboard
+      │
+      │ (alocacao confirmada)
+      ▼
+[5] ONBOARDING ──────▶ Operario (WhatsApp)
+      │                 - Info obra + alojamento
+      │                 - Treinamento seguranca
+      │                 - Contrato digital
+      │                 - Lembrete 1o dia
+      ▼
+[6] TIMESHEET ──────▶ Operario (lembretes diarios)
+      │                - GPS check
+      │                - Overtime detection
+      │                - Resumos semanais
+      ▼
+[7] EXPORT ──────▶ Admin (ficheiros prontos)
+                    - Primavera
+                    - ONSS / SS / Financas
+```
+
+### 15.11 Cron Jobs
+
+| Job | Agente | Schedule | Descricao |
+|-----|--------|----------|-----------|
+| compliance-daily | Compliance | `0 6 * * *` | Scan completo diario as 6h |
+| recruiter-followup | Recrutador | `0 9 * * *` | Followup candidatos incompletos |
+| timesheet-reminder | Timesheet | `0 20 * * 1-5` | Lembrete horas seg-sex 20h |
+| timesheet-weekly | Timesheet | `0 18 * * 5` | Resumo semanal sexta 18h |
+| compliance-weekly | Compliance | `0 8 * * 1` | Relatorio semanal segunda 8h |
+| export-monthly | Export | `0 8 1 * *` | Exportacoes mensais dia 1 |
+
+### 15.12 Deploy dos Agentes na VPS
+
+```bash
+# 1. Copiar workspaces
+cp -r docs/openclaw/workspace-* ~/.openclaw/
+
+# 2. Copiar config
+cp docs/openclaw/openclaw.json ~/.openclaw/openclaw.json
+
+# 3. Configurar WhatsApp
+openclaw setup whatsapp  # scan QR code
+
+# 4. Configurar modelo (Kimi K2.5)
+openclaw config set model kimi-k2.5
+openclaw config set provider moonshot
+
+# 5. Configurar Ollama (Qwen 2.5 para OCR)
+ollama pull qwen2.5:32b
+
+# 6. Iniciar gateway
+openclaw start
+
+# 7. Verificar agentes
+openclaw agents list
+
+# 8. Testar recrutador
+# Enviar mensagem no WhatsApp para o numero configurado
+```
+
+### 15.13 Ficheiros dos Agentes
+
+Todos os ficheiros estao em `docs/openclaw/` no repositorio:
+
+```
+docs/openclaw/
+├── README.md                              ← Documentacao dos agentes
+├── openclaw.json                          ← Config multi-agent + cron jobs
+│
+├── workspace-recruiter/                   ← Agente 1
+│   ├── SOUL.md    (personalidade)
+│   ├── IDENTITY.md (apresentacao)
+│   ├── USER.md    (contexto empresa)
+│   ├── AGENTS.md  (regras operacionais)
+│   ├── MEMORY.md  (memoria persistente)
+│   └── HEARTBEAT.md (checklist autonoma)
+│
+├── workspace-doc-validator/               ← Agente 2
+│   └── (6 ficheiros)
+│
+├── workspace-compliance/                  ← Agente 3
+│   └── (6 ficheiros)
+│
+├── workspace-allocator/                   ← Agente 4
+│   └── (6 ficheiros)
+│
+├── workspace-onboarding/                  ← Agente 5
+│   └── (6 ficheiros)
+│
+├── workspace-timesheet/                   ← Agente 6
+│   └── (6 ficheiros)
+│
+└── workspace-export/                      ← Agente 7
+    └── (6 ficheiros)
+```
 
 ---
 
