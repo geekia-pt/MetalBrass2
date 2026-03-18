@@ -2325,6 +2325,811 @@ docs/openclaw/
 
 ---
 
+## 16. Stack Backend: Python FastAPI
+
+### 16.1 Decisao Tecnica
+
+| Criterio | Node.js | Python FastAPI | Vencedor |
+|----------|---------|---------------|----------|
+| Ecossistema AI/ML | LangChain JS (incompleto) | LangChain, LlamaIndex, HuggingFace nativos | Python |
+| OCR / Qwen 2.5 | Bridges complexos | Ollama SDK nativo | Python |
+| pgvector | Libs menos maduras | SQLAlchemy + pgvector perfeito | Python |
+| OpenClaw skills | Precisa bridge | Scripts nativos | Python |
+| Performance API | ~44% mais rapido I/O puro | FastAPI async fecha gap | Empate |
+| Validacao dados | Zod (manual) | Pydantic (automatico, type-safe) | Python |
+| Docs API | Swagger extra | OpenAPI auto-gerado | Python |
+| Embeddings | Libs parciais | SDK completo Kimi/Ollama | Python |
+
+**Decisao**: Python FastAPI - o core do MetalBrass e AI (OCR, matching, embeddings, agentes). Python domina em tudo que e critico.
+
+### 16.2 Stack Completa
+
+```
+Python 3.12+
+├── FastAPI (framework web async)
+├── SQLAlchemy 2.0 (ORM async)
+├── asyncpg (driver PostgreSQL async)
+├── Pydantic v2 (validacao + serialization)
+├── Alembic (migrations)
+├── python-jose (JWT auth)
+├── passlib + bcrypt (password hashing)
+├── ollama-python (Qwen 2.5 OCR)
+├── httpx (Kimi K2.5 API calls)
+├── pgvector (extensao SQLAlchemy)
+├── python-multipart (file uploads)
+├── Pillow (processamento imagens)
+├── openpyxl (Excel export)
+├── jinja2 (templates declaracoes)
+├── uvicorn (ASGI server)
+├── PgBouncer (connection pooling)
+└── pytest + httpx (testes)
+```
+
+### 16.3 Estrutura do Projeto Backend
+
+```
+backend/
+├── app/
+│   ├── main.py                    ← FastAPI app entry point
+│   ├── config.py                  ← Settings (env vars)
+│   ├── database.py                ← SQLAlchemy engine + session
+│   │
+│   ├── models/                    ← SQLAlchemy models (1 ficheiro por tabela)
+│   │   ├── tenant.py
+│   │   ├── user.py
+│   │   ├── candidate.py
+│   │   ├── worker.py
+│   │   ├── document.py
+│   │   ├── project.py
+│   │   ├── allocation.py
+│   │   ├── housing.py
+│   │   ├── vehicle.py
+│   │   ├── time_entry.py
+│   │   ├── production_order.py
+│   │   ├── compliance.py
+│   │   ├── export.py
+│   │   └── embedding.py           ← Tabelas pgvector
+│   │
+│   ├── schemas/                   ← Pydantic schemas (request/response)
+│   │   ├── auth.py
+│   │   ├── candidate.py
+│   │   ├── worker.py
+│   │   ├── document.py
+│   │   ├── project.py
+│   │   └── ...
+│   │
+│   ├── routers/                   ← API endpoints (1 ficheiro por modulo)
+│   │   ├── auth.py
+│   │   ├── candidates.py
+│   │   ├── workers.py
+│   │   ├── projects.py
+│   │   ├── documents.py
+│   │   ├── time_entries.py
+│   │   ├── allocations.py
+│   │   ├── housings.py
+│   │   ├── vehicles.py
+│   │   ├── production.py
+│   │   ├── compliance.py
+│   │   ├── exports.py
+│   │   ├── database.py
+│   │   ├── dashboard.py
+│   │   └── webhook.py              ← WhatsApp bot webhook
+│   │
+│   ├── services/                  ← Logica de negocio
+│   │   ├── auth_service.py
+│   │   ├── ocr_service.py         ← Qwen 2.5 via Ollama
+│   │   ├── embedding_service.py   ← Kimi K2.5 embeddings
+│   │   ├── matching_service.py    ← AI allocation matching
+│   │   ├── compliance_service.py
+│   │   ├── export_service.py      ← Primavera, ONSS, SS
+│   │   └── notification_service.py ← WhatsApp via OpenClaw
+│   │
+│   ├── middleware/
+│   │   ├── auth.py                ← JWT verification
+│   │   ├── tenant.py             ← Multi-tenant isolation
+│   │   └── cors.py
+│   │
+│   └── utils/
+│       ├── file_storage.py        ← Upload/download ficheiros
+│       ├── geo.py                ← Geo-fence calculations
+│       └── primavera.py          ← Formato export Primavera
+│
+├── migrations/                    ← Alembic migrations
+│   ├── versions/
+│   └── env.py
+│
+├── tests/
+├── requirements.txt
+├── Dockerfile
+├── docker-compose.yml             ← FastAPI + PostgreSQL + PgBouncer + Ollama
+└── .env.example
+```
+
+---
+
+## 17. Base de Dados: PostgreSQL + pgvector (Guia Completo)
+
+### 17.1 Porquê PostgreSQL + pgvector
+
+1. **Uma base para tudo**: dados relacionais (workers, projects) + vectores (embeddings) na MESMA DB
+2. **Sem servicos externos**: nao precisa Pinecone, Weaviate ou Qdrant separado
+3. **Busca hibrida**: combina WHERE relacional + busca semantica no MESMO query
+4. **Escala comprovada**: 50M vectores com pgvectorscale, 99% recall
+5. **Tudo na VPS**: zero dependencias cloud, total controlo
+
+### 17.2 Extensoes Necessarias
+
+```sql
+-- Instalar extensoes (executar uma vez como superuser)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";       -- UUIDs para PKs
+CREATE EXTENSION IF NOT EXISTS "vector";           -- pgvector para embeddings
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";          -- Busca fuzzy (nomes com typos)
+CREATE EXTENSION IF NOT EXISTS "postgis";          -- Geolocalização (geo-fence)
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";         -- Hashing passwords
+```
+
+### 17.3 Configuracao PostgreSQL para Performance
+
+```ini
+# postgresql.conf - optimizado para VPS com 8GB+ RAM
+
+# Memoria
+shared_buffers = 2GB
+effective_cache_size = 6GB
+work_mem = 64MB
+maintenance_work_mem = 512MB
+
+# WAL
+wal_buffers = 64MB
+max_wal_size = 2GB
+
+# Planeamento
+random_page_cost = 1.1          # SSD
+effective_io_concurrency = 200  # SSD
+
+# Paralelismo
+max_parallel_workers_per_gather = 4
+max_parallel_workers = 8
+
+# pgvector specifico
+# HNSW build usa muita RAM temporariamente
+maintenance_work_mem = 1GB      # Para CREATE INDEX HNSW
+
+# Conexoes
+max_connections = 200           # PgBouncer vai gerir o pool real
+```
+
+### 17.4 PgBouncer (Connection Pooling)
+
+```ini
+# pgbouncer.ini
+[databases]
+metalbras = host=127.0.0.1 port=5432 dbname=metalbras
+
+[pgbouncer]
+listen_port = 6432
+listen_addr = 127.0.0.1
+auth_type = md5
+pool_mode = transaction
+default_pool_size = 25
+max_client_conn = 200
+min_pool_size = 5
+reserve_pool_size = 5
+```
+
+FastAPI conecta ao PgBouncer (porta 6432), nao diretamente ao PostgreSQL.
+
+### 17.5 Schema Completo com pgvector
+
+#### Tabelas Core (relacionais)
+
+As 20+ tabelas do PRD original mantem-se (secao 7). Aqui adicionamos as tabelas de embeddings e indices.
+
+#### Tabelas de Embeddings
+
+```sql
+-- =====================================================
+-- EMBEDDINGS DE DOCUMENTOS
+-- Cada documento processado pelo OCR gera um embedding
+-- Permite busca semantica: "certificacoes de soldadura validas"
+-- =====================================================
+CREATE TABLE document_embeddings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
+  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  worker_id UUID REFERENCES workers(id),
+  candidate_id UUID REFERENCES candidates(id),
+
+  -- Texto extraido pelo OCR
+  content_text TEXT NOT NULL,
+  content_summary TEXT,                    -- Resumo curto gerado pelo LLM
+
+  -- Embedding (Kimi K2.5 gera vectores de 1536 dimensoes)
+  embedding vector(1536) NOT NULL,
+
+  -- Metadata para filtros hibridos
+  document_type VARCHAR(100),              -- passport, a1_cert, etc
+  language VARCHAR(10),                    -- pt, fr, en, etc
+  country VARCHAR(50),                     -- Pais do documento
+  expiry_date DATE,                        -- Para filtrar docs validos
+  ocr_confidence DECIMAL(5,2),
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index HNSW para busca semantica rapida
+CREATE INDEX idx_doc_emb_hnsw ON document_embeddings
+  USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 200);
+
+-- Index composto para queries hibridas (filtro + semantica)
+CREATE INDEX idx_doc_emb_tenant ON document_embeddings(tenant_id);
+CREATE INDEX idx_doc_emb_type ON document_embeddings(document_type);
+CREATE INDEX idx_doc_emb_worker ON document_embeddings(worker_id);
+CREATE INDEX idx_doc_emb_expiry ON document_embeddings(expiry_date);
+
+-- =====================================================
+-- EMBEDDINGS DE PERFIS DE WORKERS
+-- Perfil completo do worker como embedding
+-- Permite matching semantico com projetos
+-- =====================================================
+CREATE TABLE worker_embeddings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
+  worker_id UUID NOT NULL REFERENCES workers(id) ON DELETE CASCADE,
+
+  -- Texto do perfil (gerado a partir dos dados do worker)
+  -- Ex: "Soldador TIG certificado ASME e EN ISO 9606-1, 10 anos experiencia,
+  --      trabalhou na EDF France e Martifer, especializado em aco inox e
+  --      tubagem industrial, fala portugues e frances, disponivel para Franca
+  --      e Belgica, custo 45EUR/hora, compliance 100%"
+  profile_text TEXT NOT NULL,
+
+  -- Skills como texto estruturado para embedding
+  skills_text TEXT,                        -- "TIG, MIG, ASME, EN ISO 9606-1"
+
+  -- Embedding do perfil completo
+  embedding vector(1536) NOT NULL,
+
+  -- Cache de dados para evitar JOINs
+  availability_status VARCHAR(50),
+  compliance_score INTEGER,
+  hourly_cost DECIMAL(10,2),
+  country VARCHAR(50),
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_worker_emb_hnsw ON worker_embeddings
+  USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 200);
+
+CREATE INDEX idx_worker_emb_tenant ON worker_embeddings(tenant_id);
+CREATE INDEX idx_worker_emb_status ON worker_embeddings(availability_status);
+CREATE INDEX idx_worker_emb_cost ON worker_embeddings(hourly_cost);
+
+-- =====================================================
+-- EMBEDDINGS DE PROJETOS / OBRAS
+-- Requisitos do projeto como embedding
+-- Permite matching semantico com workers
+-- =====================================================
+CREATE TABLE project_embeddings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+
+  -- Texto dos requisitos
+  -- Ex: "Obra de renovacao de central hidreletrica em Lyon Franca,
+  --      cliente EDF, necessita 3 soldadores TIG com certificacao ASME,
+  --      2 serralheiros industriais e 1 engenheiro mecanico,
+  --      orcamento 1.25M EUR, duracao 8 meses, A1 obrigatorio"
+  requirements_text TEXT NOT NULL,
+
+  -- Embedding dos requisitos
+  embedding vector(1536) NOT NULL,
+
+  -- Cache
+  country VARCHAR(50),
+  status VARCHAR(50),
+  required_skills TEXT[],
+  vacancies_count INTEGER DEFAULT 0,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_project_emb_hnsw ON project_embeddings
+  USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 200);
+
+CREATE INDEX idx_project_emb_tenant ON project_embeddings(tenant_id);
+CREATE INDEX idx_project_emb_status ON project_embeddings(status);
+
+-- =====================================================
+-- KNOWLEDGE BASE (RAG)
+-- Regras, templates, SOPs, manuais da empresa
+-- Os agentes consultam isto via busca semantica
+-- =====================================================
+CREATE TABLE knowledge_embeddings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID REFERENCES tenants(id),
+
+  -- Conteudo
+  title VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+  category VARCHAR(100) NOT NULL,          -- compliance, onboarding, safety,
+                                           -- housing_rules, primavera, onss,
+                                           -- seguranca_social, financas
+
+  -- Metadata
+  country VARCHAR(50),                     -- Se regra especifica de pais
+  language VARCHAR(10) DEFAULT 'pt',
+  version INTEGER DEFAULT 1,
+  is_active BOOLEAN DEFAULT true,
+
+  -- Embedding
+  embedding vector(1536) NOT NULL,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_knowledge_emb_hnsw ON knowledge_embeddings
+  USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 200);
+
+CREATE INDEX idx_knowledge_emb_category ON knowledge_embeddings(category);
+CREATE INDEX idx_knowledge_emb_country ON knowledge_embeddings(country);
+CREATE INDEX idx_knowledge_emb_active ON knowledge_embeddings(is_active);
+
+-- =====================================================
+-- HISTORICO DE CONVERSAS DOS AGENTES
+-- Para os agentes terem contexto de conversas passadas
+-- =====================================================
+CREATE TABLE agent_conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID REFERENCES tenants(id),
+
+  agent_id VARCHAR(50) NOT NULL,           -- recruiter, onboarding, etc
+  contact_phone VARCHAR(50),               -- WhatsApp do candidato/operario
+  contact_name VARCHAR(255),
+
+  -- Mensagem
+  direction VARCHAR(10) NOT NULL,          -- inbound, outbound
+  message_text TEXT NOT NULL,
+  message_type VARCHAR(50) DEFAULT 'text', -- text, image, document, audio
+  file_url VARCHAR(500),                   -- Se enviou ficheiro
+
+  -- Embedding da mensagem (para busca contextual)
+  embedding vector(1536),
+
+  -- Metadata
+  related_candidate_id UUID REFERENCES candidates(id),
+  related_worker_id UUID REFERENCES workers(id),
+  session_id VARCHAR(100),                 -- Agrupar conversas
+
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_agent_conv_hnsw ON agent_conversations
+  USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 200);
+
+CREATE INDEX idx_agent_conv_agent ON agent_conversations(agent_id);
+CREATE INDEX idx_agent_conv_phone ON agent_conversations(contact_phone);
+CREATE INDEX idx_agent_conv_date ON agent_conversations(created_at);
+CREATE INDEX idx_agent_conv_session ON agent_conversations(session_id);
+```
+
+### 17.6 Queries de Exemplo (Como os Agentes Usam)
+
+```sql
+-- =====================================================
+-- MATCHING SEMANTICO: Worker ↔ Projeto
+-- Agente Alocador usa isto para encontrar candidatos
+-- =====================================================
+
+-- Encontrar top 10 workers mais compativeis com um projeto
+SELECT
+  w.id, w.name, w.role_title, w.hourly_cost, w.compliance_score,
+  we.profile_text,
+  1 - (we.embedding <=> pe.embedding) AS similarity_score
+FROM worker_embeddings we
+JOIN workers w ON w.id = we.worker_id
+CROSS JOIN project_embeddings pe
+WHERE pe.project_id = 'uuid-do-projeto'
+  AND we.availability_status = 'available'
+  AND we.tenant_id = 'uuid-do-tenant'
+  AND w.compliance_score >= 90
+ORDER BY we.embedding <=> pe.embedding
+LIMIT 10;
+
+-- =====================================================
+-- BUSCA SEMANTICA DE DOCUMENTOS
+-- Agente Compliance: "documentos de seguranca expirados"
+-- =====================================================
+
+-- Gerar embedding da query primeiro via Kimi K2.5, depois:
+SELECT
+  d.id, d.type, d.document_number, d.expiry_date, d.status,
+  w.name AS worker_name,
+  de.content_summary,
+  1 - (de.embedding <=> $1) AS relevance
+FROM document_embeddings de
+JOIN documents d ON d.id = de.document_id
+JOIN workers w ON w.id = de.worker_id
+WHERE de.tenant_id = 'uuid-do-tenant'
+  AND d.expiry_date < CURRENT_DATE + INTERVAL '30 days'
+ORDER BY de.embedding <=> $1
+LIMIT 20;
+-- $1 = embedding da query "documentos de seguranca expirados"
+
+-- =====================================================
+-- RAG: Buscar conhecimento para os agentes
+-- Agente Onboarding: "regras de alojamento em Franca"
+-- =====================================================
+
+SELECT
+  title, content, category, country,
+  1 - (embedding <=> $1) AS relevance
+FROM knowledge_embeddings
+WHERE is_active = true
+  AND (country = 'FR' OR country IS NULL)
+  AND category IN ('housing_rules', 'onboarding', 'safety')
+ORDER BY embedding <=> $1
+LIMIT 5;
+
+-- =====================================================
+-- BUSCA FUZZY POR NOME (pg_trgm)
+-- Dashboard: buscar "Rikardo" encontra "Ricardo"
+-- =====================================================
+
+SELECT id, name, nif, role_title
+FROM workers
+WHERE name % 'Rikardo'              -- Similarity > 0.3
+   OR name ILIKE '%Rikardo%'
+ORDER BY similarity(name, 'Rikardo') DESC
+LIMIT 10;
+
+-- =====================================================
+-- GEO-FENCE VERIFICATION (PostGIS)
+-- Agente Timesheet: verificar clock-in dentro do raio
+-- =====================================================
+
+SELECT
+  ST_Distance(
+    ST_MakePoint(te.location_lng, te.location_lat)::geography,
+    ST_MakePoint(p.geo_lng, p.geo_lat)::geography
+  ) AS distance_meters,
+  CASE
+    WHEN ST_DWithin(
+      ST_MakePoint(te.location_lng, te.location_lat)::geography,
+      ST_MakePoint(p.geo_lng, p.geo_lat)::geography,
+      p.geo_fence_radius_m
+    ) THEN true
+    ELSE false
+  END AS within_geofence
+FROM time_entries te
+JOIN projects p ON p.id = te.project_id
+WHERE te.id = 'uuid-do-time-entry';
+
+-- =====================================================
+-- DASHBOARD KPIs (queries agregadas)
+-- =====================================================
+
+-- Compliance medio por obra
+SELECT
+  p.id, p.name,
+  AVG(w.compliance_score) AS avg_compliance,
+  COUNT(w.id) AS team_size,
+  COUNT(CASE WHEN w.compliance_score < 80 THEN 1 END) AS at_risk
+FROM projects p
+JOIN allocations a ON a.project_id = p.id AND a.status = 'active'
+JOIN workers w ON w.id = a.worker_id
+WHERE p.tenant_id = 'uuid-do-tenant'
+GROUP BY p.id, p.name
+ORDER BY avg_compliance ASC;
+
+-- Faturamento diario
+SELECT
+  p.name AS project_name,
+  SUM(te.total_cost) AS daily_revenue
+FROM time_entries te
+JOIN projects p ON p.id = te.project_id
+WHERE te.date = CURRENT_DATE
+  AND te.tenant_id = 'uuid-do-tenant'
+GROUP BY p.name
+ORDER BY daily_revenue DESC;
+```
+
+### 17.7 Fluxo de Geracao de Embeddings
+
+```
+┌─────────────────────────────────────────────────┐
+│  TRIGGER: Novo documento / worker / projeto     │
+└──────────┬──────────────────────────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────────┐
+│  1. EXTRAIR TEXTO                                │
+│     Documento → OCR via Qwen 2.5 (Ollama)       │
+│     Worker → Concatenar dados do perfil          │
+│     Projeto → Concatenar requisitos              │
+└──────────┬───────────────────────────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────────┐
+│  2. GERAR EMBEDDING                              │
+│     Texto → Kimi K2.5 API                        │
+│     Input: texto (max 8192 tokens)               │
+│     Output: vector(1536)                         │
+│                                                  │
+│     Endpoint: POST /v1/embeddings                │
+│     Model: kimi-embedding-v1                     │
+│     Ou via Ollama: ollama embed kimi-k2.5        │
+└──────────┬───────────────────────────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────────┐
+│  3. ARMAZENAR                                    │
+│     INSERT INTO {type}_embeddings                │
+│     (document_id, content_text, embedding, ...)  │
+│     VALUES ($1, $2, $3::vector, ...)             │
+└──────────┬───────────────────────────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────────┐
+│  4. DISPONIVEL PARA BUSCA                        │
+│     Agentes podem agora fazer queries semanticas │
+│     via SQL: ORDER BY embedding <=> query_vec    │
+└──────────────────────────────────────────────────┘
+```
+
+### 17.8 Servico de Embeddings (FastAPI)
+
+```python
+# app/services/embedding_service.py
+
+import httpx
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import text
+
+KIMI_API_URL = "https://api.moonshot.ai/v1/embeddings"
+KIMI_API_KEY = os.environ["KIMI_API_KEY"]
+EMBEDDING_MODEL = "kimi-embedding-v1"
+EMBEDDING_DIM = 1536
+
+async def generate_embedding(text_input: str) -> list[float]:
+    """Gera embedding via Kimi K2.5 API"""
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            KIMI_API_URL,
+            headers={"Authorization": f"Bearer {KIMI_API_KEY}"},
+            json={
+                "model": EMBEDDING_MODEL,
+                "input": text_input[:8192]  # max tokens
+            }
+        )
+        return response.json()["data"][0]["embedding"]
+
+async def semantic_search(
+    db, table: str, query_text: str,
+    tenant_id: str, filters: dict = None,
+    limit: int = 10
+) -> list:
+    """Busca semantica generica em qualquer tabela de embeddings"""
+    query_embedding = await generate_embedding(query_text)
+
+    sql = f"""
+        SELECT *, 1 - (embedding <=> :query_vec) AS similarity
+        FROM {table}
+        WHERE tenant_id = :tenant_id
+    """
+    params = {
+        "query_vec": str(query_embedding),
+        "tenant_id": tenant_id
+    }
+
+    if filters:
+        for key, value in filters.items():
+            sql += f" AND {key} = :{key}"
+            params[key] = value
+
+    sql += " ORDER BY embedding <=> :query_vec LIMIT :limit"
+    params["limit"] = limit
+
+    result = await db.execute(text(sql), params)
+    return result.fetchall()
+
+async def upsert_worker_embedding(db, worker_id: str):
+    """Gera/atualiza embedding do perfil de um worker"""
+    worker = await get_worker_with_details(db, worker_id)
+
+    profile_text = f"""
+    {worker.name}, {worker.nationality}, {worker.role_title}.
+    Skills: {', '.join(worker.skills)}.
+    Custo: {worker.hourly_cost} EUR/hora.
+    Experiencia: {format_work_history(worker.history)}.
+    Certificacoes: {format_certifications(worker.certifications)}.
+    Compliance: {worker.compliance_score}%.
+    Disponibilidade: {worker.availability_status}.
+    """
+
+    embedding = await generate_embedding(profile_text)
+
+    await db.execute(text("""
+        INSERT INTO worker_embeddings
+        (tenant_id, worker_id, profile_text, embedding,
+         availability_status, compliance_score, hourly_cost)
+        VALUES (:tenant_id, :worker_id, :profile_text,
+                :embedding::vector, :status, :score, :cost)
+        ON CONFLICT (worker_id)
+        DO UPDATE SET
+            profile_text = EXCLUDED.profile_text,
+            embedding = EXCLUDED.embedding,
+            availability_status = EXCLUDED.availability_status,
+            compliance_score = EXCLUDED.compliance_score,
+            hourly_cost = EXCLUDED.hourly_cost,
+            updated_at = NOW()
+    """), {
+        "tenant_id": worker.tenant_id,
+        "worker_id": worker_id,
+        "profile_text": profile_text,
+        "embedding": str(embedding),
+        "status": worker.availability_status,
+        "score": worker.compliance_score,
+        "cost": worker.hourly_cost
+    })
+```
+
+### 17.9 Quando Gerar/Atualizar Embeddings
+
+| Evento | Tabela Embedding | Trigger |
+|--------|-----------------|---------|
+| Documento processado pelo OCR | document_embeddings | Agente Doc Validator |
+| Novo candidato validado → worker | worker_embeddings | Apos validacao |
+| Worker atualiza skills/certificacoes | worker_embeddings | PUT /api/workers/:id |
+| Worker muda compliance_score | worker_embeddings | Agente Compliance |
+| Novo projeto criado | project_embeddings | POST /api/projects |
+| Projeto muda requisitos/vagas | project_embeddings | PUT /api/projects/:id |
+| Nova regra/template adicionado | knowledge_embeddings | Settings > Templates |
+| Mensagem WhatsApp recebida/enviada | agent_conversations | Agentes com WhatsApp |
+
+### 17.10 Estimativa de Volume e Performance
+
+```
+CENARIO ACTUAL (2026):
+- 700 workers × embedding = 700 vectores (instantaneo)
+- 700 × 10 docs × embedding = 7.000 vectores (< 5ms)
+- 60 projetos × embedding = 60 vectores (instantaneo)
+- 100 regras knowledge = 100 vectores (instantaneo)
+- Total: ~8.000 vectores
+
+CENARIO 1 ANO:
+- 2.000 workers × 15 docs = 30.000 vectores
+- + 200 projetos + 500 regras + 50.000 conversas
+- Total: ~80.000 vectores (< 10ms com HNSW)
+
+CENARIO 5 ANOS + SaaS (10 tenants):
+- 10.000 workers × 20 docs = 200.000 vectores
+- + 1.000 projetos + 2.000 regras + 500.000 conversas
+- Total: ~700.000 vectores (< 20ms com HNSW)
+
+CENARIO 10 ANOS + SaaS GRANDE (50 tenants):
+- 50.000 workers × 25 docs = 1.250.000 vectores
+- + 5.000 projetos + 10.000 regras + 2.000.000 conversas
+- Total: ~3.500.000 vectores (< 50ms com HNSW)
+- Se necessario: pgvectorscale suporta 50M+ vectores
+
+STORAGE ESTIMADO:
+- 1 embedding (1536d float32) = ~6KB
+- 1.000.000 embeddings = ~6GB (so vectores)
+- + texto + metadata = ~15GB total
+- VPS com 100GB+ disco e mais que suficiente
+```
+
+### 17.11 Backup e Manutencao
+
+```sql
+-- Cron semanal: optimizar indices HNSW
+REINDEX INDEX CONCURRENTLY idx_doc_emb_hnsw;
+REINDEX INDEX CONCURRENTLY idx_worker_emb_hnsw;
+REINDEX INDEX CONCURRENTLY idx_project_emb_hnsw;
+
+-- Cron diario: vacuum
+VACUUM ANALYZE document_embeddings;
+VACUUM ANALYZE worker_embeddings;
+VACUUM ANALYZE project_embeddings;
+VACUUM ANALYZE agent_conversations;
+
+-- Backup diario (pg_dump)
+pg_dump -Fc metalbras > /backups/metalbras_$(date +%Y%m%d).dump
+
+-- Backup WAL continuo (point-in-time recovery)
+archive_mode = on
+archive_command = 'cp %p /backups/wal/%f'
+```
+
+### 17.12 Docker Compose (Desenvolvimento)
+
+```yaml
+# docker-compose.yml
+version: '3.9'
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: metalbras
+      POSTGRES_USER: metalbras
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metalbras"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    environment:
+      DATABASE_URL: postgres://metalbras:${DB_PASSWORD}@db:5432/metalbras
+      POOL_MODE: transaction
+      DEFAULT_POOL_SIZE: 25
+    ports:
+      - "6432:6432"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://metalbras:${DB_PASSWORD}@pgbouncer:6432/metalbras
+      KIMI_API_KEY: ${KIMI_API_KEY}
+      OLLAMA_URL: http://ollama:11434
+      JWT_SECRET: ${JWT_SECRET}
+      FILE_STORAGE_PATH: /data/documents
+    volumes:
+      - documents:/data/documents
+    ports:
+      - "8000:8000"
+    depends_on:
+      - pgbouncer
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          memory: 8G
+
+  frontend:
+    build: .
+    ports:
+      - "3001:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  documents:
+  ollama_data:
+```
+
+---
+
 **FIM DO PRD**
 
 *Documento vivo - atualizar conforme decisoes de implementacao evoluem.*
