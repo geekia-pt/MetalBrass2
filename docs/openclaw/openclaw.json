@@ -1,0 +1,107 @@
+{
+  "agents": {
+    "defaults": {
+      "model": "kimi-k2.5",
+      "heartbeatInterval": 1800
+    },
+    "list": [
+      {
+        "id": "recruiter",
+        "workspace": "~/.openclaw/workspace-recruiter",
+        "model": "kimi-k2.5",
+        "heartbeatInterval": 900,
+        "description": "Recrutador - conversa com candidatos via WhatsApp, recolhe docs"
+      },
+      {
+        "id": "doc-validator",
+        "workspace": "~/.openclaw/workspace-doc-validator",
+        "model": "qwen2.5:32b",
+        "heartbeatInterval": 1800,
+        "description": "Validador de Documentos - OCR, verificacao, aprovacao automatica"
+      },
+      {
+        "id": "compliance",
+        "workspace": "~/.openclaw/workspace-compliance",
+        "model": "kimi-k2.5",
+        "heartbeatInterval": 3600,
+        "description": "Compliance Monitor - monitoriza validades, gera alertas"
+      },
+      {
+        "id": "allocator",
+        "workspace": "~/.openclaw/workspace-allocator",
+        "model": "kimi-k2.5",
+        "heartbeatInterval": 3600,
+        "description": "Alocador Inteligente - matching operarios com obras"
+      },
+      {
+        "id": "onboarding",
+        "workspace": "~/.openclaw/workspace-onboarding",
+        "model": "kimi-k2.5",
+        "heartbeatInterval": 1800,
+        "description": "Onboarding Assistant - guia operarios desde alocacao ate 1o dia"
+      },
+      {
+        "id": "timesheet",
+        "workspace": "~/.openclaw/workspace-timesheet",
+        "model": "kimi-k2.5",
+        "heartbeatInterval": 1800,
+        "description": "Timesheet Monitor - horas, GPS, overtime, lembretes"
+      },
+      {
+        "id": "export",
+        "workspace": "~/.openclaw/workspace-export",
+        "model": "kimi-k2.5",
+        "heartbeatInterval": 7200,
+        "description": "Export & Declarations - Primavera, ONSS, SS, Financas"
+      }
+    ]
+  },
+  "channels": {
+    "whatsapp": {
+      "accounts": [
+        {
+          "id": "metalbras-wa",
+          "phone": "+351XXXXXXXXX",
+          "description": "WhatsApp principal MetalBrass"
+        }
+      ]
+    }
+  },
+  "bindings": [
+    { "agent": "recruiter", "channel": "whatsapp", "account": "metalbras-wa" },
+    { "agent": "onboarding", "channel": "whatsapp", "account": "metalbras-wa" },
+    { "agent": "timesheet", "channel": "whatsapp", "account": "metalbras-wa" }
+  ],
+  "cron": {
+    "compliance-daily": {
+      "agent": "compliance",
+      "schedule": "0 6 * * *",
+      "description": "Scan diario de compliance as 6h"
+    },
+    "timesheet-reminder": {
+      "agent": "timesheet",
+      "schedule": "0 20 * * 1-5",
+      "description": "Lembrete horas seg-sex as 20h"
+    },
+    "export-monthly": {
+      "agent": "export",
+      "schedule": "0 8 1 * *",
+      "description": "Exportacoes mensais dia 1 as 8h"
+    },
+    "recruiter-followup": {
+      "agent": "recruiter",
+      "schedule": "0 9 * * *",
+      "description": "Followup candidatos incompletos as 9h"
+    },
+    "compliance-weekly": {
+      "agent": "compliance",
+      "schedule": "0 8 * * 1",
+      "description": "Relatorio semanal segunda as 8h"
+    },
+    "timesheet-weekly": {
+      "agent": "timesheet",
+      "schedule": "0 18 * * 5",
+      "description": "Resumo semanal sexta as 18h"
+    }
+  }
+}
